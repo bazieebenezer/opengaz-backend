@@ -37,8 +37,10 @@ export const initGoogleAuth = async (req: Request, res: Response) => {
 
 export const googleCallback = async (req: Request, res: Response) => {
   try {
+    console.log('[DEBUG] Callback reçu. Query:', req.query);
     const { code } = req.query;
     if (!code) {
+      console.log('[DEBUG] Code manquant dans le query:', req.query);
       return res.status(400).json({ message: "Code d'autorisation manquant." });
     }
 
