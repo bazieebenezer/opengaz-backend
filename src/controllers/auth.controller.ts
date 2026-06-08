@@ -89,7 +89,9 @@ export const googleCallback = async (req: Request, res: Response) => {
     const token = generateToken(user.id, user.role);
 
     // 3. Redirection vers le frontend via schéma mobile Expo Go
-    res.redirect(`exp://192.168.1.2:8081/--/auth-success?token=${token}`);
+    const redirectUrl = `exp://192.168.1.2:8081/--/auth-success?token=${token}`;
+    console.log('[DEBUG] Redirection vers:', redirectUrl);
+    res.redirect(redirectUrl);
 
   } catch (error: any) {
     console.error('Erreur Google Callback:', error);
