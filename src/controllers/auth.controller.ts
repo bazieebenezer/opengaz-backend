@@ -145,6 +145,8 @@ export const googleLogin = async (req: Request, res: Response) => {
   }
 };
 
+import { uploadImage } from '../utils/cloudinary';
+
 /**
  * Inscription d'un nouvel utilisateur (Consumer ou Seller) - Step 1: TempUser
  */
@@ -167,6 +169,18 @@ export const signup = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Un utilisateur avec cet email existe déjà." });
     }
 
+    // Handle Image Upload to Cloudinary if provided
+    let shopImageUrl = shopImage;
+    if (role === 'SELLER' && shopImage && shopImage.startsWith('data:image')) {
+      try {
+        shopImageUrl = await uploadImage(shopImage, 'opengaz/shops');
+      } catch (uploadError) {
+        console.error('Initial Cloudinary upload failed, but continuing with signup:', uploadError);
+        // We could either fail or continue. Let's fail for data integrity.
+        return res.status(500).json({ message: "Erreur lors de l'envoi de la photo." });
+      }
+    }
+
     const hashedPassword = await hashPassword(password);
     const otp = crypto.randomInt(1000, 9999).toString();
     const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MS);
@@ -179,13 +193,13 @@ export const signup = async (req: Request, res: Response) => {
       update: { 
         otp, expiresAt, password: hashedPassword, name: name || "Utilisateur", 
         role: role || 'CONSUMER', phone, address, neighborhood, landmark, 
-        shopName, shopImage, selectedGases, region, openingHours, 
+        shopName, shopImage: shopImageUrl, selectedGases, region, openingHours, 
         openingTime, closingTime, description 
       },
       create: { 
         email, password: hashedPassword, name: name || "Utilisateur", 
         role: role || 'CONSUMER', otp, expiresAt, phone, address, 
-        neighborhood, landmark, shopName, shopImage, selectedGases, 
+        neighborhood, landmark, shopName, shopImage: shopImageUrl, selectedGases, 
         region, openingHours, openingTime, closingTime, description 
       },
     });
