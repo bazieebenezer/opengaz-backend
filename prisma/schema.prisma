@@ -30,11 +30,11 @@ model User {
   openingHours  String?
   openingTime   String?
   closingTime   String?
-  description   : String?
+  description   String?
 
   // Password Reset fields
-  resetPasswordOtp     : String?
-  resetPasswordExpires : DateTime?
+  resetPasswordOtp     String?
+  resetPasswordExpires DateTime?
 
   products      Product[] @relation("SellerProducts")
   orders        Order[]   @relation("ConsumerOrders")
