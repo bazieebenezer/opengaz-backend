@@ -19,11 +19,17 @@ model User {
   name          String?
   phone         String?
   address       String?
+  neighborhood  String?
+  landmark      String?
   
   // Seller specific fields
   shopName      String?
+  shopImage     String?
+  selectedGases String[]
   region        String?
   openingHours  String?
+  openingTime   String?
+  closingTime   String?
   description   String?
 
   products      Product[] @relation("SellerProducts")
@@ -46,9 +52,15 @@ model TempUser {
   // Seller specific fields
   phone         String?
   address       String?
+  neighborhood  String?
+  landmark      String?
   shopName      String?
+  shopImage     String?
+  selectedGases String[]
   region        String?
   openingHours  String?
+  openingTime   String?
+  closingTime   String?
   description   String?
 
   createdAt     DateTime @default(now())

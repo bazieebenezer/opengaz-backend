@@ -154,7 +154,12 @@ export const signup = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Le corps de la requête est vide." });
     }
 
-    const { email, password, role, name, phone, address, shopName, region, openingHours, description } = req.body;
+    const { 
+      email, password, role, name, phone, address, 
+      neighborhood, landmark, shopName, shopImage, 
+      selectedGases, region, openingHours, openingTime, 
+      closingTime, description 
+    } = req.body;
     
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -173,11 +178,15 @@ export const signup = async (req: Request, res: Response) => {
       where: { email },
       update: { 
         otp, expiresAt, password: hashedPassword, name: name || "Utilisateur", 
-        role: role || 'CONSUMER', phone, address, shopName, region, openingHours, description 
+        role: role || 'CONSUMER', phone, address, neighborhood, landmark, 
+        shopName, shopImage, selectedGases, region, openingHours, 
+        openingTime, closingTime, description 
       },
       create: { 
         email, password: hashedPassword, name: name || "Utilisateur", 
-        role: role || 'CONSUMER', otp, expiresAt, phone, address, shopName, region, openingHours, description 
+        role: role || 'CONSUMER', otp, expiresAt, phone, address, 
+        neighborhood, landmark, shopName, shopImage, selectedGases, 
+        region, openingHours, openingTime, closingTime, description 
       },
     });
 
@@ -220,9 +229,15 @@ export const verifyOtp = async (req: Request, res: Response) => {
         role: tempUser.role as any,
         phone: tempUser.phone,
         address: tempUser.address,
+        neighborhood: tempUser.neighborhood,
+        landmark: tempUser.landmark,
         shopName: tempUser.shopName,
+        shopImage: tempUser.shopImage,
+        selectedGases: tempUser.selectedGases,
         region: tempUser.region,
         openingHours: tempUser.openingHours,
+        openingTime: tempUser.openingTime,
+        closingTime: tempUser.closingTime,
         description: tempUser.description,
       }
     });
