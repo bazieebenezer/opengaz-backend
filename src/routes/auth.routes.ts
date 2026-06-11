@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { signup, login, getMe, verifyOtp, resendOtp, googleLogin, googleCallback, initGoogleAuth } from '../controllers/auth.controller';
+import { signup, login, getMe, verifyOtp, resendOtp, googleLogin, googleCallback, initGoogleAuth, forgotPassword, verifyResetOtp, resetPassword } from '../controllers/auth.controller';
 import { protect } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -13,6 +13,15 @@ router.post('/verify-otp', verifyOtp);
 
 // Endpoint pour renvoyer l'OTP : POST /api/auth/resend-code
 router.post('/resend-code', resendOtp);
+
+// Endpoint pour mot de passe oublié : POST /api/auth/forgot-password
+router.post('/forgot-password', forgotPassword);
+
+// Endpoint pour vérifier l'OTP de reset : POST /api/auth/verify-reset-otp
+router.post('/verify-reset-otp', verifyResetOtp);
+
+// Endpoint pour réinitialiser le mot de passe : POST /api/auth/reset-password
+router.post('/reset-password', resetPassword);
 
 // Endpoint pour la connexion : POST /api/auth/login
 router.post('/login', login);

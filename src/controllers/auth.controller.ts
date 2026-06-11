@@ -369,3 +369,89 @@ export const getMe = async (req: any, res: Response) => {
     res.status(500).json({ message: 'Erreur serveur.', error: error.message });
   }
 };
+
+/**
+ * Mot de passe oublié : génère un OTP
+ */
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ message: "Aucun utilisateur trouvé avec cet email." });
+    }
+
+    const otp = crypto.randomInt(1000, 9999).toString();
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    console.log(`[DEV MODE] Reset OTP pour ${email}: ${otp}`);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        resetPasswordOtp: otp,
+        resetPasswordExpires: expires
+      }
+    });
+
+    res.status(200).json({ message: "Un code de réinitialisation a été envoyé." });
+  } catch (error: any) {
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+
+/**
+ * Vérifier l'OTP de réinitialisation
+ */
+export const verifyResetOtp = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user || user.resetPasswordOtp !== otp) {
+      return res.status(400).json({ message: "Code incorrect." });
+    }
+
+    if (user.resetPasswordExpires && new Date() > user.resetPasswordExpires) {
+      return res.status(400).json({ message: "Le code a expiré." });
+    }
+
+    res.status(200).json({ message: "Code valide." });
+  } catch (error: any) {
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+
+/**
+ * Réinitialiser le mot de passe
+ */
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { email, otp, password } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user || user.resetPasswordOtp !== otp) {
+      return res.status(400).json({ message: "Action non autorisée ou code invalide." });
+    }
+
+    if (user.resetPasswordExpires && new Date() > user.resetPasswordExpires) {
+      return res.status(400).json({ message: "Le code a expiré." });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        resetPasswordOtp: null,
+        resetPasswordExpires: null
+      }
+    });
+
+    res.status(200).json({ message: "Mot de passe réinitialisé avec succès." });
+  } catch (error: any) {
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
