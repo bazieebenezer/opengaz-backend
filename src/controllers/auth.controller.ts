@@ -16,12 +16,14 @@ const OTP_EXPIRATION_MS = 3 * 60 * 1000;
  * Initialise l'authentification Google (pour WebView)
  */
 export const initGoogleAuth = async (req: Request, res: Response) => {
+  const { mobile_redirect } = req.query;
   const baseUrl = "https://accounts.google.com/o/oauth2/v2/auth";
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID || "",
     redirect_uri: `${process.env.BACKEND_URL}/api/auth/google/callback`,
     response_type: "code",
     scope: "email profile",
+    state: (mobile_redirect as string) || "",
   });
 
   const authUrl = `${baseUrl}?${params.toString()}`;
