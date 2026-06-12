@@ -3,6 +3,7 @@ import prisma from '../config/prisma';
 import { hashPassword, comparePassword, generateToken } from '../utils/auth';
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
+import { uploadImage } from '../utils/cloudinary';
 
 const client = new OAuth2Client(
   process.env.GOOGLE_CLIENT_ID,
@@ -12,45 +13,34 @@ const client = new OAuth2Client(
 const OTP_EXPIRATION_MS = 3 * 60 * 1000;
 
 /**
- * Callback après authentification Google Web
- */
-/**
  * Initialise l'authentification Google (pour WebView)
  */
 export const initGoogleAuth = async (req: Request, res: Response) => {
-  // Encodage des paramètres pour éviter les erreurs de format
   const baseUrl = "https://accounts.google.com/o/oauth2/v2/auth";
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID || "",
     redirect_uri: `${process.env.BACKEND_URL}/api/auth/google/callback`,
     response_type: "code",
-    scope: "email profile", // URLSearchParams va encoder l'espace automatiquement en %20
+    scope: "email profile",
   });
 
   const authUrl = `${baseUrl}?${params.toString()}`;
-  
-  // Log pour débogage
   console.log('[DEBUG] Google Auth URL:', authUrl);
-  
   res.redirect(authUrl);
 };
 
 export const googleCallback = async (req: Request, res: Response) => {
   try {
-    console.log('[DEBUG] Callback reçu. Query:', req.query);
     const { code } = req.query;
     if (!code) {
-      console.log('[DEBUG] Code manquant dans le query:', req.query);
       return res.status(400).json({ message: "Code d'autorisation manquant." });
     }
 
-    // Échange du code contre des jetons via google-auth-library
     const { tokens } = await client.getToken({
       code: code as string,
       redirect_uri: `${process.env.BACKEND_URL}/api/auth/google/callback`,
     });
 
-    // Utilisation de decode pour contourner les vérifications de temps serveur strictes
     let ticket;
     try {
       ticket = await client.verifyIdToken({
@@ -58,7 +48,6 @@ export const googleCallback = async (req: Request, res: Response) => {
         audience: process.env.GOOGLE_WEB_CLIENT_ID,
       });
     } catch (e) {
-      // Si la vérification stricte échoue, on décode manuellement
       const base64Url = tokens.id_token!.split('.')[1];
       const decoded = JSON.parse(Buffer.from(base64Url, 'base64').toString());
       ticket = { getPayload: () => decoded } as any;
@@ -70,8 +59,6 @@ export const googleCallback = async (req: Request, res: Response) => {
     }
 
     const { email, name } = payload;
-
-    // 1. Chercher ou créer l'utilisateur
     let user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
@@ -85,12 +72,8 @@ export const googleCallback = async (req: Request, res: Response) => {
       });
     }
 
-    // 2. Générer le token
     const token = generateToken(user.id, user.role);
-
-    // 3. Redirection vers le frontend via schéma mobile Expo Go
     const redirectUrl = `exp://192.168.1.2:8081/--/auth-success?token=${token}`;
-    console.log('[DEBUG] Redirection vers:', redirectUrl);
     res.redirect(redirectUrl);
 
   } catch (error: any) {
@@ -102,7 +85,6 @@ export const googleCallback = async (req: Request, res: Response) => {
 export const googleLogin = async (req: Request, res: Response) => {
   try {
     const { idToken } = req.body;
-
     const ticket = await client.verifyIdToken({
       idToken,
       audience: process.env.GOOGLE_WEB_CLIENT_ID,
@@ -114,8 +96,6 @@ export const googleLogin = async (req: Request, res: Response) => {
     }
 
     const { email, name } = payload;
-
-    // 1. Chercher ou créer l'utilisateur
     let user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
@@ -123,15 +103,13 @@ export const googleLogin = async (req: Request, res: Response) => {
         data: {
           email,
           name: name || "Utilisateur",
-          role: 'CONSUMER', // Rôle par défaut
-          password: 'GOOGLE_AUTH_USER', // Placeholder
+          role: 'CONSUMER',
+          password: 'GOOGLE_AUTH_USER',
         },
       });
     }
 
-    // 2. Générer le token
     const token = generateToken(user.id, user.role);
-
     const { password: _, ...userWithoutPassword } = user;
     res.status(200).json({
       message: 'Connexion réussie via Google.',
@@ -144,8 +122,6 @@ export const googleLogin = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Erreur lors de la connexion Google.', error: error.message });
   }
 };
-
-import { uploadImage } from '../utils/cloudinary';
 
 /**
  * Inscription d'un nouvel utilisateur (Consumer ou Seller) - Step 1: TempUser
@@ -163,20 +139,16 @@ export const signup = async (req: Request, res: Response) => {
       closingTime, description 
     } = req.body;
     
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ message: "Un utilisateur avec cet email existe déjà." });
     }
 
-    // Handle Image Upload to Cloudinary if provided
     let shopImageUrl = shopImage;
     if (role === 'SELLER' && shopImage && shopImage.startsWith('data:image')) {
       try {
         shopImageUrl = await uploadImage(shopImage, 'opengaz/shops');
       } catch (uploadError) {
-        console.error('Initial Cloudinary upload failed, but continuing with signup:', uploadError);
-        // We could either fail or continue. Let's fail for data integrity.
         return res.status(500).json({ message: "Erreur lors de l'envoi de la photo." });
       }
     }
@@ -185,7 +157,6 @@ export const signup = async (req: Request, res: Response) => {
     const otp = crypto.randomInt(1000, 9999).toString();
     const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MS);
 
-    // Log OTP for development
     console.log(`[DEV MODE] OTP pour ${email}: ${otp}`);
 
     await prisma.tempUser.upsert({
@@ -204,7 +175,10 @@ export const signup = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(200).json({ message: "Inscription initiée. Veuillez vérifier le code OTP (affiché dans les logs du serveur)." });
+    res.status(200).json({ 
+      message: "Inscription initiée. Veuillez vérifier le code OTP.",
+      otp: otp // Inclus pour le développement
+    });
 
   } catch (error: any) {
     console.error('Erreur Signup:', error);
@@ -218,7 +192,6 @@ export const signup = async (req: Request, res: Response) => {
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
-
     const tempUser = await prisma.tempUser.findUnique({ where: { email } });
 
     if (!tempUser) {
@@ -234,7 +207,6 @@ export const verifyOtp = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Code OTP incorrect." });
     }
 
-    // Create user
     const user = await prisma.user.create({
       data: {
         email: tempUser.email,
@@ -256,11 +228,8 @@ export const verifyOtp = async (req: Request, res: Response) => {
       }
     });
 
-    // Cleanup
     await prisma.tempUser.delete({ where: { email } });
-
     const token = generateToken(user.id, user.role);
-
     const { password: _, ...userWithoutPassword } = user;
     res.status(201).json({
       message: 'Utilisateur créé avec succès.',
@@ -275,68 +244,69 @@ export const verifyOtp = async (req: Request, res: Response) => {
 };
 
 /**
- * Renvoyer un nouveau code OTP
+ * Renvoyer un nouveau code OTP (Signup ou Reset Password)
  */
 export const resendOtp = async (req: Request, res: Response) => {
   try {
-    console.log('[DEBUG] resendOtp body:', req.body);
     const { email } = req.body;
-
     if (!email) {
       return res.status(400).json({ message: "L'email est requis." });
-    }
-
-    const tempUser = await prisma.tempUser.findUnique({ where: { email } });
-    if (!tempUser) {
-      return res.status(404).json({ message: "Session expirée. Veuillez vous réinscrire." });
     }
 
     const newOtp = crypto.randomInt(1000, 9999).toString();
     const newExpiresAt = new Date(Date.now() + OTP_EXPIRATION_MS);
 
-    console.log(`[DEV MODE] Nouveau OTP pour ${email}: ${newOtp}`);
+    // 1. Chercher d'abord dans TempUser (Inscription)
+    const tempUser = await prisma.tempUser.findUnique({ where: { email } });
+    if (tempUser) {
+      await prisma.tempUser.update({
+        where: { email },
+        data: { otp: newOtp, expiresAt: newExpiresAt },
+      });
+      console.log(`[DEV MODE] Nouveau OTP (Signup) pour ${email}: ${newOtp}`);
+      return res.status(200).json({ message: "Nouveau code envoyé.", otp: newOtp });
+    }
 
-    await prisma.tempUser.update({
-      where: { email },
-      data: { otp: newOtp, expiresAt: newExpiresAt },
-    });
+    // 2. Sinon chercher dans User (Réinitialisation)
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (user) {
+      await prisma.user.update({
+        where: { email },
+        data: { 
+          resetPasswordOtp: newOtp, 
+          resetPasswordExpires: new Date(Date.now() + 10 * 60 * 1000) 
+        },
+      });
+      console.log(`[DEV MODE] Nouveau OTP (Reset) pour ${email}: ${newOtp}`);
+      return res.status(200).json({ message: "Nouveau code envoyé.", otp: newOtp });
+    }
 
-    res.status(200).json({ message: "Nouveau code envoyé." });
+    return res.status(404).json({ message: "Aucune session active trouvée pour cet email." });
   } catch (error: any) {
     console.error('Erreur Resend OTP:', error);
     res.status(500).json({ message: 'Erreur lors de la génération.', error: error.message });
   }
 };
+
 export const login = async (req: Request, res: Response) => {
   try {
     if (!req.body || Object.keys(req.body).length === 0) {
-      return res.status(400).json({ 
-        message: "Le corps de la requête est vide ou mal formé. Assurez-vous d'envoyer du JSON avec l'en-tête 'Content-Type: application/json'." 
-      });
+      return res.status(400).json({ message: "Le corps de la requête est vide." });
     }
 
     const { email, password } = req.body;
-
-    // 1. Trouver l'utilisateur
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
       return res.status(401).json({ message: 'Identifiants invalides.' });
     }
 
-    // 2. Vérifier le mot de passe
     const isPasswordValid = await comparePassword(password, user.password);
-
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Identifiants invalides.' });
     }
 
-    // 3. Générer le token
     const token = generateToken(user.id, user.role);
-
-    // 4. Retourner la réponse
     const { password: _, ...userWithoutPassword } = user;
     res.status(200).json({
       message: 'Connexion réussie.',
@@ -350,19 +320,12 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Récupère le profil de l'utilisateur connecté
- */
 export const getMe = async (req: any, res: Response) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
-    });
-
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
-
     const { password: _, ...userWithoutPassword } = user;
     res.status(200).json({ user: userWithoutPassword });
   } catch (error: any) {
@@ -383,7 +346,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     }
 
     const otp = crypto.randomInt(1000, 9999).toString();
-    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
 
     console.log(`[DEV MODE] Reset OTP pour ${email}: ${otp}`);
 
@@ -397,7 +360,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
     res.status(200).json({ 
       message: "Un code de réinitialisation a été envoyé.",
-      otp: otp // Inclus pour le développement sur Render
+      otp: otp // Inclus pour le développement
     });
   } catch (error: any) {
     res.status(500).json({ message: "Erreur serveur.", error: error.message });
@@ -440,25 +403,6 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     if (user.resetPasswordExpires && new Date() > user.resetPasswordExpires) {
       return res.status(400).json({ message: "Le code a expiré." });
-    }
-
-    const hashedPassword = await hashPassword(password);
-
-    await prisma.user.update({
-      where: { email },
-      data: {
-        password: hashedPassword,
-        resetPasswordOtp: null,
-        resetPasswordExpires: null
-      }
-    });
-
-    res.status(200).json({ message: "Mot de passe réinitialisé avec succès." });
-  } catch (error: any) {
-    res.status(500).json({ message: "Erreur serveur.", error: error.message });
-  }
-};
- "Le code a expiré." });
     }
 
     const hashedPassword = await hashPassword(password);
