@@ -395,7 +395,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
       }
     });
 
-    res.status(200).json({ message: "Un code de réinitialisation a été envoyé." });
+    res.status(200).json({ 
+      message: "Un code de réinitialisation a été envoyé.",
+      otp: otp // Inclus pour le développement sur Render
+    });
   } catch (error: any) {
     res.status(500).json({ message: "Erreur serveur.", error: error.message });
   }
@@ -437,6 +440,25 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     if (user.resetPasswordExpires && new Date() > user.resetPasswordExpires) {
       return res.status(400).json({ message: "Le code a expiré." });
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        resetPasswordOtp: null,
+        resetPasswordExpires: null
+      }
+    });
+
+    res.status(200).json({ message: "Mot de passe réinitialisé avec succès." });
+  } catch (error: any) {
+    res.status(500).json({ message: "Erreur serveur.", error: error.message });
+  }
+};
+ "Le code a expiré." });
     }
 
     const hashedPassword = await hashPassword(password);
