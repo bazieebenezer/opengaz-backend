@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { signup, login, getMe, verifyOtp, resendOtp, googleLogin, googleCallback, initGoogleAuth, forgotPassword, verifyResetOtp, resetPassword } from '../controllers/auth.controller';
+import { signup, login, getMe, verifyOtp, resendOtp, googleLogin, googleCallback, initGoogleAuth, forgotPassword, verifyResetOtp, resetPassword, updateShopStatus } from '../controllers/auth.controller';
 import { protect } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -37,5 +37,8 @@ router.get('/google/callback', googleCallback);
 
 // Endpoint pour récupérer le profil actuel : GET /api/auth/me
 router.get('/me', protect, getMe);
+
+// Endpoint pour mettre à jour le statut de la boutique : PATCH /api/auth/shop-status
+router.patch('/shop-status', protect, updateShopStatus);
 
 export default router;
