@@ -31,7 +31,7 @@ export const initGoogleAuth = async (req: Request, res: Response) => {
 
 export const googleCallback = async (req: Request, res: Response) => {
   try {
-    const { code } = req.query;
+    const { code, state } = req.query;
     if (!code) {
       return res.status(400).json({ message: "Code d'autorisation manquant." });
     }
@@ -73,8 +73,16 @@ export const googleCallback = async (req: Request, res: Response) => {
     }
 
     const token = generateToken(user.id, user.role);
-    const redirectUrl = `exp://192.168.1.2:8081/--/auth-success?token=${token}`;
-    res.redirect(redirectUrl);
+    
+    // Redirection vers le mobile via l'URL transmise dans state
+    let mobileRedirect = (state as string) || "opengaz://auth-success";
+    
+    // Gérer l'ajout du token selon si l'URL a déjà des paramètres ou non
+    const separator = mobileRedirect.includes('?') ? '&' : '?';
+    const finalUrl = `${mobileRedirect}${separator}token=${token}`;
+    
+    console.log('[DEBUG] Redirection finale vers mobile:', finalUrl);
+    res.redirect(finalUrl);
 
   } catch (error: any) {
     console.error('Erreur Google Callback:', error);
