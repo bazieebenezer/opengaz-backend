@@ -72,16 +72,27 @@ model TempUser {
 
 model Product {
   id          String      @id @default(cuid())
-  name        String
-  description String?
-  price       Float
   stock       Int         @default(0)
-  imageUrl    String?
+  
+  category    GasCategory @relation(fields: [categoryId], references: [id])
+  categoryId  String
+  
   seller      User        @relation("SellerProducts", fields: [sellerId], references: [id])
   sellerId    String
+  
   orderItems  OrderItem[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+model GasCategory {
+  id        String    @id
+  name      String
+  brand     String
+  weight    Float
+  price     Float
+  imageUrl  String
+  products  Product[]
 }
 
 enum OrderStatus {

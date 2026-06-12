@@ -238,6 +238,20 @@ export const verifyOtp = async (req: Request, res: Response) => {
       }
     });
 
+    // Automatiquement créer les produits pour les vendeurs
+    if (user.role === 'SELLER' && tempUser.selectedGases && tempUser.selectedGases.length > 0) {
+      const productsData = tempUser.selectedGases.map(gasId => ({
+        sellerId: user.id,
+        categoryId: gasId,
+        stock: 0 // Stock initial à zéro
+      }));
+
+      await prisma.product.createMany({
+        data: productsData,
+        skipDuplicates: true // Au cas où
+      });
+    }
+
     await prisma.tempUser.delete({ where: { email } });
     const token = generateToken(user.id, user.role);
     const { password: _, ...userWithoutPassword } = user;
