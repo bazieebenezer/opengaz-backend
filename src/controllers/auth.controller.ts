@@ -447,23 +447,36 @@ export const resetPassword = async (req: Request, res: Response) => {
 };
 
 /**
- * Mettre à jour le statut d'ouverture de la boutique
+ * Mettre à jour la photo de profil/boutique
  */
-export const updateShopStatus = async (req: any, res: Response) => {
+export const updateProfileImage = async (req: any, res: Response) => {
   try {
-    const { isOpen } = req.body;
+    const { image } = req.body;
     const userId = req.user.id;
+
+    if (!image) {
+      return res.status(400).json({ message: "L'image est requise." });
+    }
+
+    let imageUrl = image;
+    if (image.startsWith('data:image')) {
+      try {
+        imageUrl = await uploadImage(image, 'opengaz/profiles');
+      } catch (uploadError) {
+        return res.status(500).json({ message: "Erreur lors de l'envoi de l'image." });
+      }
+    }
 
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { isShopOpen: isOpen },
+      data: { shopImage: imageUrl },
     });
 
     res.status(200).json({ 
-      message: `Boutique ${isOpen ? 'ouverte' : 'fermée'} avec succès.`,
-      isOpen: user.isShopOpen 
+      message: "Photo mise à jour avec succès.",
+      shopImage: user.shopImage 
     });
   } catch (error: any) {
-    res.status(500).json({ message: "Erreur lors de la mise à jour du statut.", error: error.message });
+    res.status(500).json({ message: "Erreur lors de la mise à jour de la photo.", error: error.message });
   }
 };
