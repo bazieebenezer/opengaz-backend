@@ -1,9 +1,22 @@
 import { Router } from 'express';
-import { signup, login, getMe, verifyOtp, resendOtp, googleLogin, googleCallback, initGoogleAuth, forgotPassword, verifyResetOtp, resetPassword, updateShopStatus, updateProfileImage } from '../controllers/auth.controller';
+import { 
+  signup, 
+  login, 
+  getMe, 
+  verifyOtp, 
+  resendOtp, 
+  googleLogin, 
+  googleCallback, 
+  initGoogleAuth, 
+  forgotPassword, 
+  verifyResetOtp, 
+  resetPassword, 
+  updateShopStatus, 
+  updateProfileImage 
+} from '../controllers/auth.controller';
 import { protect } from '../middlewares/auth.middleware';
 
 const router = Router();
-console.log('Registering Auth Routes...');
 
 // Endpoint pour l'inscription : POST /api/auth/signup
 router.post('/signup', signup);
@@ -41,8 +54,7 @@ router.get('/me', protect, getMe);
 // Endpoint pour mettre à jour le statut de la boutique : PATCH /api/auth/shop-status
 router.patch('/shop-status', protect, updateShopStatus);
 
-export default router;
-profil : PATCH /api/auth/profile-image
+// Endpoint pour mettre à jour la photo de profil : PATCH /api/auth/profile-image
 router.patch('/profile-image', protect, updateProfileImage);
 
 export default router;
