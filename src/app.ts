@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
+import productRoutes from './routes/product.routes';
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
