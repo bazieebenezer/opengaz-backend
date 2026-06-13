@@ -2,6 +2,37 @@ import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 
 /**
+ * Récupère tous les produits (pour le consommateur)
+ */
+export const getAllProducts = async (req: Request, res: Response) => {
+  try {
+    const products = await prisma.product.findMany({
+      include: {
+        category: true,
+        seller: {
+          select: {
+            id: true,
+            shopName: true,
+            name: true,
+            shopImage: true,
+          }
+        }
+      },
+      where: {
+        seller: {
+          isShopOpen: true // Optionnel : ne récupérer que les vendeurs ouverts
+        }
+      }
+    });
+
+    res.status(200).json({ products });
+  } catch (error: any) {
+    console.error('Erreur GetAllProducts:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération des produits.', error: error.message });
+  }
+};
+
+/**
  * Récupère les produits du vendeur connecté
  */
 export const getMyProducts = async (req: any, res: Response) => {

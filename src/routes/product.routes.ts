@@ -1,10 +1,13 @@
 import { Router } from 'express';
-import { getMyProducts, updateProductStock } from '../controllers/product.controller';
+import { getAllProducts, getMyProducts, updateProductStock } from '../controllers/product.controller';
 import { protect } from '../middlewares/auth.middleware';
 
 const router = Router();
 
 // Toutes les routes de produits nécessitent d'être connecté
+// Sauf celle pour récupérer tous les produits (public)
+router.get('/', getAllProducts);
+
 router.use(protect);
 
 /**
