@@ -18,7 +18,8 @@ export const getAllSellers = async (req: Request, res: Response) => {
         description: true,
         phone: true,
         openingHours: true,
-        isShopOpen: true
+        isShopOpen: true,
+        selectedGases: true
       }
     });
 
