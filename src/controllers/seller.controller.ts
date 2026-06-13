@@ -8,8 +8,7 @@ export const getAllSellers = async (req: Request, res: Response) => {
   try {
     const sellers = await prisma.user.findMany({
       where: {
-        role: 'SELLER',
-        isShopOpen: true 
+        role: 'SELLER'
       },
       select: {
         id: true,
@@ -18,7 +17,8 @@ export const getAllSellers = async (req: Request, res: Response) => {
         shopImage: true,
         description: true,
         phone: true,
-        openingHours: true
+        openingHours: true,
+        isShopOpen: true
       }
     });
 
