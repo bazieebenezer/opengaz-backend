@@ -12,7 +12,8 @@ import {
   verifyResetOtp, 
   resetPassword, 
   updateShopStatus, 
-  updateProfileImage 
+  updateProfileImage,
+  updateProfile
 } from '../controllers/auth.controller';
 import { protect } from '../middlewares/auth.middleware';
 
@@ -56,5 +57,8 @@ router.patch('/shop-status', protect, updateShopStatus);
 
 // Endpoint pour mettre à jour la photo de profil : PATCH /api/auth/profile-image
 router.patch('/profile-image', protect, updateProfileImage);
+
+// Endpoint pour mettre à jour les informations du profil : PATCH /api/auth/profile
+router.patch('/profile', protect, updateProfile);
 
 export default router;
