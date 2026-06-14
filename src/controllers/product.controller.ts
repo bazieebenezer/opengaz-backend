@@ -19,12 +19,11 @@ export const getAllProducts = async (req: Request, res: Response) => {
         }
       },
       where: {
-        seller: {
-          isShopOpen: true // Optionnel : ne récupérer que les vendeurs ouverts
         }
       }
     });
 
+    console.log(`[DEBUG] Found ${products.length} products in DB`);
     res.status(200).json({ products });
   } catch (error: any) {
     console.error('Erreur GetAllProducts:', error);

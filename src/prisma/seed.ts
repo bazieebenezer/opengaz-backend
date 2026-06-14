@@ -2,6 +2,7 @@ import "dotenv/config";
 import { PrismaClient } from '@prisma/client';
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { hashPassword } from "../utils/auth";
 
 const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
@@ -68,6 +69,81 @@ async function main() {
       update: category,
       create: category,
     });
+  }
+  
+  console.log('Starting seeding test sellers in Abidjan...');
+  const hashedPassword = await hashPassword('password123');
+
+  const sellers = [
+    {
+      email: 'gaz.remblais@test.com',
+      password: hashedPassword,
+      name: 'Boutique Remblais',
+      role: 'SELLER' as const,
+      shopName: 'Koumassi Gaz Pro',
+      latitude: 5.2925,
+      longitude: -3.9410,
+      isShopOpen: true,
+      phone: '07070707',
+      address: 'Koumassi Remblais',
+      description: 'Spécialiste de la distribution à Koumassi Remblais.',
+      selectedGases: ['sodigaz-6', 'sodigaz-12']
+    },
+    {
+      email: 'gaz.treich@test.com',
+      password: hashedPassword,
+      name: 'M. Touré',
+      role: 'SELLER' as const,
+      shopName: 'Ets Touré & Fils - Treich',
+      latitude: 5.3120,
+      longitude: -4.0050,
+      isShopOpen: true,
+      phone: '01010101',
+      address: 'Treichville Avenue 16',
+      description: 'Vente de gaz et services de proximité à Treichville.',
+      selectedGases: ['oryx-6', 'oryx-12', 'total-6']
+    },
+    {
+      email: 'gaz.angre@test.com',
+      password: hashedPassword,
+      name: 'Awa Gaz',
+      role: 'SELLER' as const,
+      shopName: 'Angré Distribution',
+      latitude: 5.3850,
+      longitude: -3.9750,
+      isShopOpen: true,
+      phone: '05050505',
+      address: 'Cocody Angré 7ème Tranche',
+      description: 'Livraison rapide de gaz dans la zone d\'Angré.',
+      selectedGases: ['total-6', 'total-12', 'sodigaz-12']
+    }
+  ];
+
+  for (const sellerData of sellers) {
+    const { selectedGases, ...userData } = sellerData;
+    const user = await prisma.user.upsert({
+      where: { email: userData.email },
+      update: userData,
+      create: userData,
+    });
+
+    console.log(`Seeding products for ${user.shopName}...`);
+    for (const categoryId of selectedGases) {
+      await (prisma as any).product.upsert({
+        where: {
+          id: `${user.id}-${categoryId}` // Mock ID for upsert
+        },
+        update: {
+          stock: 10
+        },
+        create: {
+          id: `${user.id}-${categoryId}`,
+          sellerId: user.id,
+          categoryId: categoryId,
+          stock: 10
+        }
+      });
+    }
   }
   
   console.log('Seeding finished successfully!');
