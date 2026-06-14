@@ -21,6 +21,8 @@ model User {
   address       String?
   neighborhood  String?
   landmark      String?
+  latitude      Float?
+  longitude     Float?
   
   // Seller specific fields
   shopName      String?
@@ -59,6 +61,8 @@ model TempUser {
   address       String?
   neighborhood  String?
   landmark      String?
+  latitude      Float?
+  longitude     Float?
   shopName      String?
   shopImage     String?
   selectedGases String[]

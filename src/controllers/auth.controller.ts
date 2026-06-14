@@ -508,7 +508,7 @@ export const updateProfileImage = async (req: any, res: Response) => {
  */
 export const updateProfile = async (req: any, res: Response) => {
   try {
-    const { name, phone, address } = req.body;
+    const { name, phone, address, latitude, longitude } = req.body;
     const userId = req.user.id;
 
     const user = await prisma.user.update({
@@ -517,6 +517,8 @@ export const updateProfile = async (req: any, res: Response) => {
         name: name !== undefined ? name : undefined,
         phone: phone !== undefined ? phone : undefined,
         address: address !== undefined ? address : undefined,
+        latitude: latitude !== undefined ? latitude : undefined,
+        longitude: longitude !== undefined ? longitude : undefined,
       },
     });
 
