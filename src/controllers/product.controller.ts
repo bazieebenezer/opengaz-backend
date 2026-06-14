@@ -17,9 +17,6 @@ export const getAllProducts = async (req: Request, res: Response) => {
             shopImage: true,
           }
         }
-      },
-      where: {
-        }
       }
     });
 
