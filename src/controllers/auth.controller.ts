@@ -146,7 +146,7 @@ export const signup = async (req: Request, res: Response) => {
       email, password, role, name, phone, address, 
       neighborhood, landmark, shopName, shopImage, 
       selectedGases, region, openingHours, openingTime, 
-      closingTime, description 
+      closingTime, description, latitude, longitude 
     } = req.body;
     
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -175,13 +175,17 @@ export const signup = async (req: Request, res: Response) => {
         otp, expiresAt, password: hashedPassword, name: name || "Utilisateur", 
         role: role || 'CONSUMER', phone, address, neighborhood, landmark, 
         shopName, shopImage: shopImageUrl, selectedGases, region, openingHours, 
-        openingTime, closingTime, description 
+        openingTime, closingTime, description,
+        latitude: latitude !== undefined ? parseFloat(latitude) : undefined,
+        longitude: longitude !== undefined ? parseFloat(longitude) : undefined
       },
       create: { 
         email, password: hashedPassword, name: name || "Utilisateur", 
         role: role || 'CONSUMER', otp, expiresAt, phone, address, 
         neighborhood, landmark, shopName, shopImage: shopImageUrl, selectedGases, 
-        region, openingHours, openingTime, closingTime, description 
+        region, openingHours, openingTime, closingTime, description,
+        latitude: latitude !== undefined ? parseFloat(latitude) : undefined,
+        longitude: longitude !== undefined ? parseFloat(longitude) : undefined
       },
     });
 
@@ -235,6 +239,8 @@ export const verifyOtp = async (req: Request, res: Response) => {
         openingTime: tempUser.openingTime,
         closingTime: tempUser.closingTime,
         description: tempUser.description,
+        latitude: tempUser.latitude,
+        longitude: tempUser.longitude,
       }
     });
 
