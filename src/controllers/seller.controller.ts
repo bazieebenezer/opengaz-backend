@@ -19,7 +19,9 @@ export const getAllSellers = async (req: Request, res: Response) => {
         phone: true,
         openingHours: true,
         isShopOpen: true,
-        selectedGases: true
+        selectedGases: true,
+        latitude: true,
+        longitude: true
       }
     });
 
