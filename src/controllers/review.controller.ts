@@ -54,7 +54,7 @@ export const createReview = async (req: any, res: Response) => {
  */
 export const getSellerReviews = async (req: Request, res: Response) => {
   try {
-    const { sellerId } = req.params;
+    const sellerId = req.params.sellerId as string;
 
     const reviews = await prisma.review.findMany({
       where: { sellerId },
