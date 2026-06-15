@@ -29,6 +29,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/sellers', sellerRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
