@@ -9,8 +9,14 @@ export const createReview = async (req: any, res: Response) => {
     const consumerId = req.user.id;
     const { orderId, rating, comment } = req.body;
 
-    if (!orderId || !rating) {
-      return res.status(400).json({ message: 'L\'ID de la commande et la note sont requis.' });
+    console.log('[DEBUG] CreateReview - Body:', { orderId, rating, comment, consumerId });
+
+    if (!orderId) {
+      return res.status(400).json({ message: 'L\'ID de la commande est requis.' });
+    }
+
+    if (rating === undefined || rating === null) {
+      return res.status(400).json({ message: 'La note est requise.' });
     }
 
     // Vérifier si la commande existe et appartient au consommateur
@@ -20,14 +26,17 @@ export const createReview = async (req: any, res: Response) => {
     });
 
     if (!order) {
+      console.log('[DEBUG] CreateReview - Commande non trouvée:', orderId);
       return res.status(404).json({ message: 'Commande introuvable.' });
     }
 
     if (order.consumerId !== consumerId) {
+      console.log('[DEBUG] CreateReview - Propriétaire incorrect. Commande client:', order.consumerId, 'Token client:', consumerId);
       return res.status(403).json({ message: 'Vous ne pouvez noter que vos propres commandes.' });
     }
 
     if (order.review) {
+      console.log('[DEBUG] CreateReview - Avis déjà existant pour cette commande.');
       return res.status(400).json({ message: 'Cette commande a déjà été notée.' });
     }
 
@@ -35,7 +44,7 @@ export const createReview = async (req: any, res: Response) => {
     const review = await prisma.review.create({
       data: {
         orderId,
-        rating,
+        rating: Number(rating),
         comment,
         sellerId: order.sellerId,
         consumerId: consumerId
