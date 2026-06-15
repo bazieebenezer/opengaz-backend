@@ -146,6 +146,8 @@ export const createOrder = async (req: any, res: Response) => {
   try {
     const consumerId = req.user.id;
     const { sellerId, items } = req.body; // items: [{ productId, quantity }]
+    
+    console.log("DEBUG - CreateOrder body:", JSON.stringify(req.body));
 
     if (!sellerId || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Données de commande invalides.' });
