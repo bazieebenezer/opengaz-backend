@@ -40,16 +40,22 @@ export const createReview = async (req: any, res: Response) => {
       return res.status(400).json({ message: 'Cette commande a déjà été notée.' });
     }
 
-    // Créer l'avis
-    const review = await prisma.review.create({
-      data: {
-        orderId,
-        rating: Number(rating),
-        comment,
-        sellerId: order.sellerId,
-        consumerId: consumerId
-      }
-    });
+    // Créer l'avis et mettre à jour le statut de la commande en une transaction
+    const [review] = await prisma.$transaction([
+      prisma.review.create({
+        data: {
+          orderId,
+          rating: Number(rating),
+          comment,
+          sellerId: order.sellerId,
+          consumerId: consumerId
+        }
+      }),
+      prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'COMPLETED' }
+      })
+    ]);
 
     res.status(201).json({ message: 'Merci pour votre avis !', review });
   } catch (error: any) {
