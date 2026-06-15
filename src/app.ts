@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.routes';
 import productRoutes from './routes/product.routes';
 import orderRoutes from './routes/order.routes';
 import sellerRoutes from './routes/seller.routes';
+import reviewRoutes from './routes/review.routes';
 
 dotenv.config();
 

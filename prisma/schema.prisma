@@ -42,6 +42,9 @@ model User {
   products      Product[] @relation("SellerProducts")
   orders        Order[]   @relation("ConsumerOrders")
   sellerOrders  Order[]   @relation("SellerOrders")
+  
+  reviews       Review[]  @relation("SellerReviews")
+  givenReviews  Review[]  @relation("ConsumerReviews")
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -120,9 +123,27 @@ model Order {
   sellerId    String
   
   items       OrderItem[]
+  review      Review?
   
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int      // de 1 à 5
+  comment   String?
+  
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String   @unique
+  
+  seller    User     @relation("SellerReviews", fields: [sellerId], references: [id])
+  sellerId  String
+  
+  consumer  User     @relation("ConsumerReviews", fields: [consumerId], references: [id])
+  consumerId String
+
+  createdAt DateTime @default(now())
 }
 
 model OrderItem {
