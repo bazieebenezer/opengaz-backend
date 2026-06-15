@@ -1,11 +1,31 @@
 import { Router } from 'express';
-import { getSellerOrders, updateOrderStatus, getOrderDetails } from '../controllers/order.controller';
+import { 
+  getSellerOrders, 
+  updateOrderStatus, 
+  getOrderDetails,
+  createOrder,
+  getConsumerOrders 
+} from '../controllers/order.controller';
 import { protect } from '../middlewares/auth.middleware';
 
 const router = Router();
 
 // Toutes les routes de commandes nécessitent d'être connecté
 router.use(protect);
+
+/**
+ * @route   POST /api/orders
+ * @desc    Créer une nouvelle commande
+ * @access  Private (Consumer)
+ */
+router.post('/', createOrder);
+
+/**
+ * @route   GET /api/orders/consumer
+ * @desc    Récupérer les commandes du consommateur connecté
+ * @access  Private (Consumer)
+ */
+router.get('/consumer', getConsumerOrders);
 
 /**
  * @route   GET /api/orders/seller
