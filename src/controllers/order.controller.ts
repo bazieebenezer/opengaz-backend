@@ -71,6 +71,19 @@ export const updateOrderStatus = async (req: any, res: Response) => {
       return res.status(403).json({ message: 'Action non autorisée sur cette commande.' });
     }
 
+    // Validation des transitions de statut
+    if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
+      return res.status(400).json({ message: 'Impossible de modifier une commande terminée ou annulée.' });
+    }
+
+    const statusOrder = ['PENDING', 'PREPARING', 'SHIPPED', 'DELIVERED', 'COMPLETED'];
+    const currentIndex = statusOrder.indexOf(order.status);
+    const newIndex = statusOrder.indexOf(status);
+
+    if (status !== 'CANCELLED' && newIndex <= currentIndex) {
+      return res.status(400).json({ message: 'Le nouveau statut doit être une progression logique.' });
+    }
+
     const updatedOrder = await prisma.order.update({
       where: { id },
       data: { status: status as OrderStatus },
@@ -146,11 +159,18 @@ export const createOrder = async (req: any, res: Response) => {
   try {
     const consumerId = req.user.id;
     const { sellerId, items } = req.body; // items: [{ productId, quantity }]
-    
-    console.log("DEBUG - CreateOrder body:", JSON.stringify(req.body));
 
     if (!sellerId || !items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Données de commande invalides.' });
+    }
+
+    // Récupérer le vendeur pour vérifier s'il est ouvert
+    const seller = await prisma.user.findUnique({
+      where: { id: sellerId }
+    });
+
+    if (!seller || !seller.isShopOpen) {
+      return res.status(400).json({ message: 'Le vendeur est actuellement fermé.' });
     }
 
     // Récupérer les produits pour vérifier les prix et le stock
@@ -173,6 +193,11 @@ export const createOrder = async (req: any, res: Response) => {
     const orderItemsData = items.map((item: any) => {
       const product = dbProducts.find(p => p.id === item.productId);
       if (!product) throw new Error('Produit non trouvé');
+      
+      // Vérifier si le stock est suffisant
+      if (product.stock < item.quantity) {
+        throw new Error(`Stock insuffisant pour le produit: ${product.category.name}`);
+      }
       
       const price = product.category.price;
       totalAmount += price * item.quantity;
