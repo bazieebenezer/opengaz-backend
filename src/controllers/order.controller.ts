@@ -31,7 +31,8 @@ export const getSellerOrders = async (req: any, res: Response) => {
               }
             }
           }
-        }
+        },
+        review: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -135,7 +136,10 @@ export const getConsumerOrders = async (req: any, res: Response) => {
     const consumerId = req.user.id;
 
     const orders = await prisma.order.findMany({
-      where: { consumerId },
+      where: { 
+        consumerId,
+        consumerHidden: false
+      },
       include: {
         seller: {
           select: {
@@ -154,7 +158,8 @@ export const getConsumerOrders = async (req: any, res: Response) => {
               }
             }
           }
-        }
+        },
+        review: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -165,6 +170,25 @@ export const getConsumerOrders = async (req: any, res: Response) => {
   } catch (error: any) {
     console.error('Erreur GetConsumerOrders:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération de vos commandes.', error: error.message });
+  }
+};
+
+/**
+ * Masque l'historique des commandes pour le consommateur
+ */
+export const clearConsumerHistory = async (req: any, res: Response) => {
+  try {
+    const consumerId = req.user.id;
+
+    await prisma.order.updateMany({
+      where: { consumerId },
+      data: { consumerHidden: true }
+    });
+
+    res.status(200).json({ message: 'Historique des commandes supprimé.' });
+  } catch (error: any) {
+    console.error('Erreur ClearConsumerHistory:', error);
+    res.status(500).json({ message: 'Erreur lors de la suppression de l\'historique.', error: error.message });
   }
 };
 
@@ -316,7 +340,8 @@ export const getOrderDetails = async (req: any, res: Response) => {
               }
             }
           }
-        }
+        },
+        review: true
       }
     });
 

@@ -113,21 +113,22 @@ enum OrderStatus {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  status      OrderStatus @default(PENDING)
-  totalAmount Float
+  id             String      @id @default(cuid())
+  status         OrderStatus @default(PENDING)
+  totalAmount    Float
+  consumerHidden Boolean     @default(false)
   
-  consumer    User        @relation("ConsumerOrders", fields: [consumerId], references: [id])
-  consumerId  String
+  consumer       User        @relation("ConsumerOrders", fields: [consumerId], references: [id])
+  consumerId     String
   
-  seller      User        @relation("SellerOrders", fields: [sellerId], references: [id])
-  sellerId    String
+  seller         User        @relation("SellerOrders", fields: [sellerId], references: [id])
+  sellerId       String
   
-  items       OrderItem[]
-  review      Review?
+  items          OrderItem[]
+  review         Review?
   
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 model Review {

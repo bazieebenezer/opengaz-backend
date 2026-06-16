@@ -4,7 +4,8 @@ import {
   updateOrderStatus, 
   getOrderDetails,
   createOrder,
-  getConsumerOrders 
+  getConsumerOrders,
+  clearConsumerHistory 
 } from '../controllers/order.controller';
 import { protect } from '../middlewares/auth.middleware';
 
@@ -26,6 +27,13 @@ router.post('/', createOrder);
  * @access  Private (Consumer)
  */
 router.get('/consumer', getConsumerOrders);
+
+/**
+ * @route   DELETE /api/orders/consumer/history
+ * @desc    Supprimer l'historique des commandes du consommateur
+ * @access  Private (Consumer)
+ */
+router.delete('/consumer/history', clearConsumerHistory);
 
 /**
  * @route   GET /api/orders/seller
