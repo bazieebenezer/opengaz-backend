@@ -160,7 +160,10 @@ export const createOrder = async (req: any, res: Response) => {
     const consumerId = req.user.id;
     const { sellerId, items } = req.body; // items: [{ productId, quantity }]
 
+    console.log('[DEBUG] createOrder payload:', { sellerId, itemsCount: items?.length, consumerId });
+
     if (!sellerId || !items || !Array.isArray(items) || items.length === 0) {
+      console.log('[DEBUG] Invalid payload check failed');
       return res.status(400).json({ message: 'Données de commande invalides.' });
     }
 
@@ -169,7 +172,13 @@ export const createOrder = async (req: any, res: Response) => {
       where: { id: sellerId }
     });
 
-    if (!seller || !seller.isShopOpen) {
+    if (!seller) {
+      console.log('[DEBUG] Seller not found:', sellerId);
+      return res.status(400).json({ message: 'Vendeur introuvable.' });
+    }
+
+    if (!seller.isShopOpen) {
+      console.log('[DEBUG] Seller shop is closed:', seller.shopName);
       return res.status(400).json({ message: 'Le vendeur est actuellement fermé.' });
     }
 
@@ -185,7 +194,10 @@ export const createOrder = async (req: any, res: Response) => {
       }
     });
 
+    console.log(`[DEBUG] Found ${dbProducts.length} products in DB for ${items.length} items requested`);
+
     if (dbProducts.length !== items.length) {
+      console.log('[DEBUG] Products mismatch or wrong seller');
       return res.status(400).json({ message: 'Certains produits sont introuvables ou n\'appartiennent pas à ce vendeur.' });
     }
 
