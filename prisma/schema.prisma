@@ -117,6 +117,7 @@ model Order {
   status         OrderStatus @default(PENDING)
   totalAmount    Float
   consumerHidden Boolean     @default(false)
+  sellerHidden   Boolean     @default(false)
   
   consumer       User        @relation("ConsumerOrders", fields: [consumerId], references: [id])
   consumerId     String

@@ -5,7 +5,8 @@ import {
   getOrderDetails,
   createOrder,
   getConsumerOrders,
-  clearConsumerHistory 
+  clearConsumerHistory,
+  clearSellerHistory 
 } from '../controllers/order.controller';
 import { protect } from '../middlewares/auth.middleware';
 
@@ -41,6 +42,13 @@ router.delete('/consumer/history', clearConsumerHistory);
  * @access  Private (Seller)
  */
 router.get('/seller', getSellerOrders);
+
+/**
+ * @route   DELETE /api/orders/seller/history
+ * @desc    Supprimer l'historique des réservations du vendeur
+ * @access  Private (Seller)
+ */
+router.delete('/seller/history', clearSellerHistory);
 
 /**
  * @route   GET /api/orders/:id

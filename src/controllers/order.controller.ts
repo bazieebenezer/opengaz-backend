@@ -10,7 +10,10 @@ export const getSellerOrders = async (req: any, res: Response) => {
     const sellerId = req.user.id;
 
     const orders = await prisma.order.findMany({
-      where: { sellerId },
+      where: { 
+        sellerId,
+        sellerHidden: false
+      },
       include: {
         consumer: {
           select: {
@@ -43,6 +46,25 @@ export const getSellerOrders = async (req: any, res: Response) => {
   } catch (error: any) {
     console.error('Erreur GetSellerOrders:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération des commandes.', error: error.message });
+  }
+};
+
+/**
+ * Masque l'historique des réservations pour le vendeur
+ */
+export const clearSellerHistory = async (req: any, res: Response) => {
+  try {
+    const sellerId = req.user.id;
+
+    await prisma.order.updateMany({
+      where: { sellerId },
+      data: { sellerHidden: true }
+    });
+
+    res.status(200).json({ message: 'Historique des réservations supprimé.' });
+  } catch (error: any) {
+    console.error('Erreur ClearSellerHistory:', error);
+    res.status(500).json({ message: 'Erreur lors de la suppression de l\'historique.', error: error.message });
   }
 };
 
