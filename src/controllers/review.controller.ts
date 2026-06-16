@@ -19,6 +19,11 @@ export const createReview = async (req: any, res: Response) => {
       return res.status(400).json({ message: 'La note est requise.' });
     }
 
+    const ratingNum = Number(rating);
+    if (isNaN(ratingNum) || ratingNum < 0 || ratingNum > 5) {
+      return res.status(400).json({ message: 'La note doit être comprise entre 0 et 5.' });
+    }
+
     // Vérifier si la commande existe et appartient au consommateur
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -30,6 +35,13 @@ export const createReview = async (req: any, res: Response) => {
       return res.status(404).json({ message: 'Commande introuvable.' });
     }
 
+    console.log('[DEBUG] CreateReview - Order details:', {
+      orderId: order.id,
+      consumerId: order.consumerId,
+      status: order.status,
+      hasReview: !!order.review
+    });
+
     if (order.consumerId !== consumerId) {
       console.log('[DEBUG] CreateReview - Propriétaire incorrect. Commande client:', order.consumerId, 'Token client:', consumerId);
       return res.status(403).json({ message: 'Vous ne pouvez noter que vos propres commandes.' });
@@ -40,7 +52,7 @@ export const createReview = async (req: any, res: Response) => {
       return res.status(400).json({ message: 'Cette commande a déjà été notée.' });
     }
 
-    if (Number(rating) === 0) {
+    if (ratingNum === 0) {
       // Cas où l'utilisateur passe la notation : on marque juste la commande comme terminée
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
@@ -50,25 +62,32 @@ export const createReview = async (req: any, res: Response) => {
     }
 
     // Créer l'avis et mettre à jour le statut de la commande dans une transaction
-    const [review] = await prisma.$transaction([
-      prisma.review.create({
+    const review = await prisma.$transaction(async (tx) => {
+      const newReview = await tx.review.create({
         data: {
           orderId,
-          rating: Number(rating),
+          rating: ratingNum,
           comment,
           sellerId: order.sellerId,
           consumerId: consumerId
         }
-      }),
-      prisma.order.update({
+      });
+
+      await tx.order.update({
         where: { id: orderId },
         data: { status: 'COMPLETED' }
-      })
-    ]);
+      });
+
+      return newReview;
+    });
 
     res.status(201).json({ message: 'Merci pour votre avis !', review });
   } catch (error: any) {
     console.error('Erreur CreateReview:', error);
+    // Gérer l'erreur de contrainte unique de Prisma au cas où
+    if (error.code === 'P2002') {
+      return res.status(400).json({ message: 'Cette commande a déjà été notée.' });
+    }
     res.status(500).json({ message: 'Erreur lors de l\'envoi de l\'avis.', error: error.message });
   }
 };

@@ -60,7 +60,8 @@ export const updateOrderStatus = async (req: any, res: Response) => {
 
     // Vérifier que la commande appartient au vendeur
     const order = await prisma.order.findUnique({
-      where: { id }
+      where: { id },
+      include: { items: true }
     });
 
     if (!order) {
@@ -84,21 +85,36 @@ export const updateOrderStatus = async (req: any, res: Response) => {
       return res.status(400).json({ message: 'Le nouveau statut doit être une progression logique.' });
     }
 
-    const updatedOrder = await prisma.order.update({
-      where: { id },
-      data: { status: status as OrderStatus },
-      include: {
-        consumer: true,
-        items: {
-          include: {
-            product: {
-              include: {
-                category: true
+    // Transaction pour mettre à jour le statut et éventuellement restaurer le stock
+    const updatedOrder = await prisma.$transaction(async (tx) => {
+      const updated = await tx.order.update({
+        where: { id },
+        data: { status: status as OrderStatus },
+        include: {
+          consumer: true,
+          items: {
+            include: {
+              product: {
+                include: {
+                  category: true
+                }
               }
             }
           }
         }
+      });
+
+      // Si la commande est annulée, on restaure le stock
+      if (status === 'CANCELLED') {
+        for (const item of order.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } }
+          });
+        }
       }
+
+      return updated;
     });
 
     res.status(200).json({ 
