@@ -149,7 +149,8 @@ export const signup = async (req: Request, res: Response) => {
       closingTime, description, latitude, longitude 
     } = req.body;
     
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const emailNormalized = email.toLowerCase();
+    const existingUser = await prisma.user.findUnique({ where: { email: emailNormalized } });
     if (existingUser) {
       return res.status(400).json({ message: "Un utilisateur avec cet email existe déjà." });
     }
@@ -167,10 +168,10 @@ export const signup = async (req: Request, res: Response) => {
     const otp = crypto.randomInt(1000, 9999).toString();
     const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MS);
 
-    console.log(`[DEV MODE] OTP pour ${email}: ${otp}`);
+    console.log(`[DEV MODE] OTP pour ${emailNormalized}: ${otp}`);
 
     await prisma.tempUser.upsert({
-      where: { email },
+      where: { email: emailNormalized },
       update: { 
         otp, expiresAt, password: hashedPassword, name: name || "Utilisateur", 
         role: role || 'CONSUMER', phone, address, neighborhood, landmark, 
@@ -180,7 +181,7 @@ export const signup = async (req: Request, res: Response) => {
         longitude: longitude !== undefined ? parseFloat(longitude) : undefined
       },
       create: { 
-        email, password: hashedPassword, name: name || "Utilisateur", 
+        email: emailNormalized, password: hashedPassword, name: name || "Utilisateur", 
         role: role || 'CONSUMER', otp, expiresAt, phone, address, 
         neighborhood, landmark, shopName, shopImage: shopImageUrl, selectedGases, 
         region, openingHours, openingTime, closingTime, description,
@@ -206,14 +207,15 @@ export const signup = async (req: Request, res: Response) => {
 export const verifyOtp = async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
-    const tempUser = await prisma.tempUser.findUnique({ where: { email } });
+    const emailNormalized = email.toLowerCase();
+    const tempUser = await prisma.tempUser.findUnique({ where: { email: emailNormalized } });
 
     if (!tempUser) {
       return res.status(404).json({ message: "Session introuvable. Veuillez recommencer." });
     }
 
     if (new Date() > tempUser.expiresAt) {
-      await prisma.tempUser.delete({ where: { email } });
+      await prisma.tempUser.delete({ where: { email: emailNormalized } });
       return res.status(400).json({ message: "Le code OTP a expiré. Veuillez en redemander un." });
     }
 
@@ -258,7 +260,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
       });
     }
 
-    await prisma.tempUser.delete({ where: { email } });
+    await prisma.tempUser.delete({ where: { email: emailNormalized } });
     const token = generateToken(user.id, user.role);
     const { password: _, ...userWithoutPassword } = user;
     res.status(201).json({
@@ -325,7 +327,8 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const { email, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const emailNormalized = email.toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: emailNormalized } });
 
     if (!user) {
       return res.status(401).json({ message: 'Identifiants invalides.' });
@@ -369,7 +372,8 @@ export const getMe = async (req: any, res: Response) => {
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const emailNormalized = email.toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: emailNormalized } });
 
     if (!user) {
       return res.status(404).json({ message: "Aucun utilisateur trouvé avec cet email." });
@@ -378,10 +382,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const otp = crypto.randomInt(1000, 9999).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000);
 
-    console.log(`[DEV MODE] Reset OTP pour ${email}: ${otp}`);
+    console.log(`[DEV MODE] Reset OTP pour ${emailNormalized}: ${otp}`);
 
     await prisma.user.update({
-      where: { email },
+      where: { email: emailNormalized },
       data: {
         resetPasswordOtp: otp,
         resetPasswordExpires: expires
@@ -403,7 +407,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
 export const verifyResetOtp = async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const emailNormalized = email.toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: emailNormalized } });
 
     if (!user || user.resetPasswordOtp !== otp) {
       return res.status(400).json({ message: "Code incorrect." });
@@ -425,7 +430,8 @@ export const verifyResetOtp = async (req: Request, res: Response) => {
 export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { email, otp, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
+    const emailNormalized = email.toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: emailNormalized } });
 
     if (!user || user.resetPasswordOtp !== otp) {
       return res.status(400).json({ message: "Action non autorisée ou code invalide." });
@@ -438,7 +444,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     const hashedPassword = await hashPassword(password);
 
     await prisma.user.update({
-      where: { email },
+      where: { email: emailNormalized },
       data: {
         password: hashedPassword,
         resetPasswordOtp: null,
