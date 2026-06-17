@@ -146,7 +146,8 @@ export const signup = async (req: Request, res: Response) => {
       email, password, role, name, phone, address, 
       neighborhood, landmark, shopName, shopImage, 
       selectedGases, region, openingHours, openingTime, 
-      closingTime, description, latitude, longitude 
+      closingTime, description, latitude, longitude,
+      cnibRecto, cnibVerso
     } = req.body;
     
     const emailNormalized = email.toLowerCase();
@@ -160,11 +161,28 @@ export const signup = async (req: Request, res: Response) => {
       try {
         shopImageUrl = await uploadImage(shopImage, 'opengaz/shops');
       } catch (uploadError) {
-        return res.status(500).json({ message: "Erreur lors de l'envoi de la photo." });
+        return res.status(500).json({ message: "Erreur lors de l'envoi de la photo de la boutique." });
       }
     }
 
-    const hashedPassword = await hashPassword(password);
+    let cnibRectoUrl = cnibRecto;
+    let cnibVersoUrl = cnibVerso;
+    
+    if (role === 'DELIVERY') {
+      if (!cnibRecto || !cnibVerso) {
+        return res.status(400).json({ message: "Les photos de la CNIB (recto et verso) sont obligatoires pour les livreurs." });
+      }
+      try {
+        cnibRectoUrl = await uploadImage(cnibRecto, 'opengaz/delivery/cnib');
+        cnibVersoUrl = await uploadImage(cnibVerso, 'opengaz/delivery/cnib');
+      } catch (uploadError) {
+        return res.status(500).json({ message: "Erreur lors de l'envoi des pièces d'identité." });
+      }
+    }
+
+    // Pour le livreur, on utilise un mot de passe temporaire s'il n'est pas fourni (il sera validé par l'admin)
+    const effectivePassword = role === 'DELIVERY' ? (password || crypto.randomBytes(8).toString('hex')) : password;
+    const hashedPassword = await hashPassword(effectivePassword);
     const otp = crypto.randomInt(1000, 9999).toString();
     const expiresAt = new Date(Date.now() + OTP_EXPIRATION_MS);
 
@@ -178,7 +196,9 @@ export const signup = async (req: Request, res: Response) => {
         shopName, shopImage: shopImageUrl, selectedGases, region, openingHours, 
         openingTime, closingTime, description,
         latitude: latitude !== undefined ? parseFloat(latitude) : undefined,
-        longitude: longitude !== undefined ? parseFloat(longitude) : undefined
+        longitude: longitude !== undefined ? parseFloat(longitude) : undefined,
+        cnibRecto: cnibRectoUrl,
+        cnibVerso: cnibVersoUrl
       },
       create: { 
         email: emailNormalized, password: hashedPassword, name: name || "Utilisateur", 
@@ -186,7 +206,9 @@ export const signup = async (req: Request, res: Response) => {
         neighborhood, landmark, shopName, shopImage: shopImageUrl, selectedGases, 
         region, openingHours, openingTime, closingTime, description,
         latitude: latitude !== undefined ? parseFloat(latitude) : undefined,
-        longitude: longitude !== undefined ? parseFloat(longitude) : undefined
+        longitude: longitude !== undefined ? parseFloat(longitude) : undefined,
+        cnibRecto: cnibRectoUrl,
+        cnibVerso: cnibVersoUrl
       },
     });
 
@@ -243,6 +265,9 @@ export const verifyOtp = async (req: Request, res: Response) => {
         description: tempUser.description,
         latitude: tempUser.latitude,
         longitude: tempUser.longitude,
+        cnibRecto: tempUser.cnibRecto,
+        cnibVerso: tempUser.cnibVerso,
+        isValidated: tempUser.role === 'DELIVERY' ? false : true,
       }
     });
 
@@ -332,6 +357,13 @@ export const login = async (req: Request, res: Response) => {
 
     if (!user) {
       return res.status(401).json({ message: 'Identifiants invalides.' });
+    }
+
+    // Vérification de la validation pour les livreurs
+    if (user.role === 'DELIVERY' && !user.isValidated) {
+      return res.status(403).json({ 
+        message: 'Votre compte est en cours de validation par notre équipe technique. Vous recevrez vos accès bientôt.' 
+      });
     }
 
     const isPasswordValid = await comparePassword(password, user.password);

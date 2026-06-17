@@ -9,6 +9,7 @@ datasource db {
 enum Role {
   CONSUMER
   SELLER
+  DELIVERY
 }
 
 model User {
@@ -23,6 +24,11 @@ model User {
   landmark      String?
   latitude      Float?
   longitude     Float?
+  
+  // Verification fields
+  isValidated   Boolean   @default(false)
+  cnibRecto     String?
+  cnibVerso     String?
   
   // Seller specific fields
   shopName      String?
@@ -42,6 +48,7 @@ model User {
   products      Product[] @relation("SellerProducts")
   orders        Order[]   @relation("ConsumerOrders")
   sellerOrders  Order[]   @relation("SellerOrders")
+  delivererOrders Order[] @relation("DelivererOrders")
   
   reviews       Review[]  @relation("SellerReviews")
   givenReviews  Review[]  @relation("ConsumerReviews")
@@ -58,6 +65,10 @@ model TempUser {
   role          String
   otp           String
   expiresAt     DateTime
+  
+  // Verification fields
+  cnibRecto     String?
+  cnibVerso     String?
   
   // Seller specific fields
   phone         String?
@@ -124,6 +135,9 @@ model Order {
   
   seller         User        @relation("SellerOrders", fields: [sellerId], references: [id])
   sellerId       String
+
+  deliverer      User?       @relation("DelivererOrders", fields: [delivererId], references: [id])
+  delivererId    String?
   
   items          OrderItem[]
   review         Review?
