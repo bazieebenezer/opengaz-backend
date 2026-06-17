@@ -43,7 +43,7 @@ export const getPendingUsers = async (req: AuthRequest, res: Response) => {
  */
 export const validateUser = async (req: AuthRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { action } = req.body; // 'APPROVE' ou 'REJECT'
 
     if (action === 'APPROVE') {
