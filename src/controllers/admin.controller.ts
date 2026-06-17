@@ -74,7 +74,12 @@ export const getAdminStats = async (req: AuthRequest, res: Response) => {
   try {
     const totalOrders = await prisma.order.count();
     const totalUsers = await prisma.user.count();
-    const pendingValidations = await prisma.user.count({ where: { isValidated: false } });
+    const pendingValidations = await prisma.user.count({ 
+      where: { 
+        isValidated: false,
+        role: { in: ['DELIVERY', 'SELLER'] }
+      } 
+    });
     const totalRevenue = await prisma.order.aggregate({
       _sum: {
         totalAmount: true
