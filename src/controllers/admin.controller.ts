@@ -68,6 +68,35 @@ export const validateUser = async (req: AuthRequest, res: Response) => {
 };
 
 /**
+ * Récupérer toutes les commandes pour l'admin
+ */
+export const getAllOrders = async (req: AuthRequest, res: Response) => {
+  try {
+    const { status } = req.query;
+    const where: any = {};
+    if (status) {
+      where.status = status;
+    }
+
+    const orders = await prisma.order.findMany({
+      where,
+      include: {
+        consumer: { select: { name: true, email: true } },
+        seller: { select: { shopName: true } },
+        items: {
+          include: { product: { include: { category: true } } }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json(orders);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des commandes.', error: error.message });
+  }
+};
+
+/**
  * Récupérer des statistiques globales pour le dashboard
  */
 export const getAdminStats = async (req: AuthRequest, res: Response) => {

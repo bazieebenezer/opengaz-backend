@@ -3,7 +3,8 @@ import { protect, restrictTo } from '../middlewares/auth.middleware';
 import { 
   getPendingUsers, 
   validateUser, 
-  getAdminStats 
+  getAdminStats,
+  getAllOrders
 } from '../controllers/admin.controller';
 
 const router = Router();
@@ -17,6 +18,9 @@ router.get('/pending-users', getPendingUsers);
 
 // Valider ou rejeter un utilisateur (Livreur ou Seller)
 router.post('/validate-user/:id', validateUser);
+
+// Récupérer toutes les commandes
+router.get('/orders', getAllOrders);
 
 // Statistiques globales
 router.get('/stats', getAdminStats);
