@@ -8,6 +8,7 @@ import productRoutes from './routes/product.routes';
 import orderRoutes from './routes/order.routes';
 import sellerRoutes from './routes/seller.routes';
 import reviewRoutes from './routes/review.routes';
+import adminRoutes from './routes/admin.routes';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/sellers', sellerRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -10,6 +10,7 @@ enum Role {
   CONSUMER
   SELLER
   DELIVERY
+  ADMIN
 }
 
 model User {
