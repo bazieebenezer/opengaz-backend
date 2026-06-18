@@ -4,6 +4,7 @@ import {
   getPendingUsers, 
   validateUser, 
   getAdminStats,
+  getSalesTrend,
   getAllOrders
 } from '../controllers/admin.controller';
 
@@ -24,5 +25,8 @@ router.get('/orders', getAllOrders);
 
 // Statistiques globales
 router.get('/stats', getAdminStats);
+
+// Évolution des ventes
+router.get('/sales-trend', getSalesTrend);
 
 export default router;

@@ -97,7 +97,7 @@ export const getAllOrders = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Récupérer des statistiques globales pour le dashboard
+ * Récupérer les statistiques globales pour le dashboard
  */
 export const getAdminStats = async (req: AuthRequest, res: Response) => {
   try {
@@ -123,5 +123,40 @@ export const getAdminStats = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     res.status(500).json({ message: 'Erreur lors de la récupération des stats.', error: error.message });
+  }
+};
+
+/**
+ * Récupérer l'évolution des ventes sur les 7 derniers jours
+ */
+export const getSalesTrend = async (req: AuthRequest, res: Response) => {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const orders = await prisma.order.findMany({
+      where: {
+        createdAt: {
+          gte: sevenDaysAgo,
+        },
+      },
+      select: {
+        createdAt: true,
+        totalAmount: true,
+      },
+    });
+
+    // Agrégation par jour
+    const trend: Record<string, number> = {};
+    orders.forEach(order => {
+      const date = order.createdAt.toLocaleDateString('fr-FR', { weekday: 'short' });
+      trend[date] = (trend[date] || 0) + (order.totalAmount || 0);
+    });
+
+    const result = Object.entries(trend).map(([name, value]) => ({ name, value }));
+
+    res.status(200).json(result);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erreur lors de la récupération de la tendance des ventes.', error: error.message });
   }
 };
