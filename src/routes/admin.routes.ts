@@ -6,7 +6,7 @@ import {
   getAdminStats,
   getSalesTrend,
   getAllOrders,
-  getGeographicDistribution
+  getUserRoleDistribution
 } from '../controllers/admin.controller';
 
 const router = Router();
@@ -30,7 +30,7 @@ router.get('/stats', getAdminStats);
 // Évolution des ventes
 router.get('/sales-trend', getSalesTrend);
 
-// Répartition géographique
-router.get('/geo-distribution', getGeographicDistribution);
+// Répartition par rôle utilisateur
+router.get('/user-role-distribution', getUserRoleDistribution);
 
 export default router;

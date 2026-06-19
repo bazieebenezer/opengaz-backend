@@ -162,32 +162,24 @@ export const getSalesTrend = async (req: AuthRequest, res: Response) => {
 };
 
 /**
- * Récupérer la répartition des utilisateurs par région
+ * Récupérer la répartition des utilisateurs par rôle
  */
-export const getGeographicDistribution = async (req: AuthRequest, res: Response) => {
+export const getUserRoleDistribution = async (req: AuthRequest, res: Response) => {
   try {
-    const users = await prisma.user.findMany({
-      where: {
-        region: {
-          not: null
-        }
-      },
-      select: {
-        region: true
+    const users = await prisma.user.groupBy({
+      by: ['role'],
+      _count: {
+        id: true
       }
     });
 
-    const distribution: Record<string, number> = {};
-    users.forEach(user => {
-      if (user.region) {
-        distribution[user.region] = (distribution[user.region] || 0) + 1;
-      }
-    });
-
-    const result = Object.entries(distribution).map(([name, value]) => ({ name, value }));
+    const result = users.map(item => ({
+      name: item.role,
+      value: item._count.id
+    }));
 
     res.status(200).json(result);
   } catch (error: any) {
-    res.status(500).json({ message: 'Erreur lors de la récupération de la répartition géographique.', error: error.message });
+    res.status(500).json({ message: 'Erreur lors de la récupération de la répartition par rôle.', error: error.message });
   }
 };
