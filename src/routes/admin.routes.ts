@@ -5,7 +5,8 @@ import {
   validateUser, 
   getAdminStats,
   getSalesTrend,
-  getAllOrders
+  getAllOrders,
+  getGeographicDistribution
 } from '../controllers/admin.controller';
 
 const router = Router();
@@ -28,5 +29,8 @@ router.get('/stats', getAdminStats);
 
 // Évolution des ventes
 router.get('/sales-trend', getSalesTrend);
+
+// Répartition géographique
+router.get('/geo-distribution', getGeographicDistribution);
 
 export default router;
