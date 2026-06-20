@@ -300,7 +300,7 @@ export const createOrder = async (req: any, res: Response) => {
           consumerId,
           sellerId,
           totalAmount,
-          status: 'PENDING_DELIVERY',
+          status: 'PENDING', // Changed from PENDING_DELIVERY to PENDING for seller validation
           items: {
             create: orderItemsData
           }
@@ -407,7 +407,7 @@ export const getOrderDetails = async (req: any, res: Response) => {
  */
 export const getAvailableOrders = async (req: any, res: Response) => {
   try {
-    // Fetch all pending orders without proximity filtering
+    // Fetch all pending orders without proximity filtering, only those validated by seller (PENDING_DELIVERY)
     const orders = await prisma.order.findMany({
       where: { 
         status: 'PENDING_DELIVERY',
