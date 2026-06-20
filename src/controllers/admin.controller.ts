@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import prisma from '../config/prisma';
 import { AuthRequest } from '../middlewares/auth.middleware';
+import { hashPassword } from '../utils/auth';
+import crypto from 'crypto';
 
 /**
  * Récupérer la liste des utilisateurs en attente de validation (Livreurs et Revendeurs)
@@ -47,16 +49,29 @@ export const validateUser = async (req: AuthRequest, res: Response) => {
     const { action } = req.body; // 'APPROVE' ou 'REJECT'
 
     if (action === 'APPROVE') {
-      const user = await prisma.user.update({
+      // Pour les livreurs, générer un mot de passe temporaire s'il n'en a pas
+      const user = await prisma.user.findUnique({ where: { id } });
+      let tempPassword: string | null = null;
+      let updateData: any = { isValidated: true };
+
+      if (user && user.role === 'DELIVERY') {
+        tempPassword = crypto.randomBytes(4).toString('hex');
+        updateData.password = await hashPassword(tempPassword);
+        updateData.temporaryPassword = tempPassword;
+      }
+
+      await prisma.user.update({
         where: { id },
-        data: { isValidated: true }
+        data: updateData
       });
-      return res.status(200).json({ message: `Utilisateur ${user.name} validé avec succès.` });
+
+      return res.status(200).json({ 
+        message: `Utilisateur ${user?.name} validé avec succès.`,
+        temporaryPassword: tempPassword 
+      });
     } 
     
     if (action === 'REJECT') {
-      // Pour un rejet, on pourrait soit supprimer, soit marquer comme rejeté.
-      // Ici on supprime pour simplifier le flux de ré-inscription si besoin.
       await prisma.user.delete({ where: { id } });
       return res.status(200).json({ message: "Utilisateur rejeté et supprimé." });
     }
@@ -162,6 +177,34 @@ export const getSalesTrend = async (req: AuthRequest, res: Response) => {
 };
 
 /**
+ * Récupérer tous les livreurs validés
+ */
+export const getValidatedDeliveryPartners = async (req: AuthRequest, res: Response) => {
+  try {
+    const deliveryPartners = await prisma.user.findMany({
+      where: {
+        isValidated: true,
+        role: 'DELIVERY'
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        temporaryPassword: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    res.status(200).json(deliveryPartners);
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des livreurs validés.', error: error.message });
+  }
+};
+
+/**
  * Récupérer la répartition des utilisateurs par rôle
  */
 export const getUserRoleDistribution = async (req: AuthRequest, res: Response) => {
@@ -183,3 +226,4 @@ export const getUserRoleDistribution = async (req: AuthRequest, res: Response) =
     res.status(500).json({ message: 'Erreur lors de la récupération de la répartition par rôle.', error: error.message });
   }
 };
+

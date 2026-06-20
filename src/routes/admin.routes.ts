@@ -6,7 +6,8 @@ import {
   getAdminStats,
   getSalesTrend,
   getAllOrders,
-  getUserRoleDistribution
+  getUserRoleDistribution,
+  getValidatedDeliveryPartners
 } from '../controllers/admin.controller';
 
 const router = Router();
@@ -17,6 +18,9 @@ router.use(restrictTo('ADMIN'));
 
 // Récupérer les utilisateurs en attente de validation
 router.get('/pending-users', getPendingUsers);
+
+// Récupérer tous les livreurs validés
+router.get('/validated-delivery-partners', getValidatedDeliveryPartners);
 
 // Valider ou rejeter un utilisateur (Livreur ou Seller)
 router.post('/validate-user/:id', validateUser);

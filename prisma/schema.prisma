@@ -45,6 +45,7 @@ model User {
   // Password Reset fields
   resetPasswordOtp     String?
   resetPasswordExpires DateTime?
+  temporaryPassword    String?
 
   products      Product[] @relation("SellerProducts")
   orders        Order[]   @relation("ConsumerOrders")
