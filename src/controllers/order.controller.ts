@@ -357,6 +357,13 @@ export const getOrderDetails = async (req: any, res: Response) => {
             address: true
           }
         },
+        deliverer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true
+          }
+        },
         items: {
           include: {
             product: {
@@ -374,8 +381,8 @@ export const getOrderDetails = async (req: any, res: Response) => {
       return res.status(404).json({ message: 'Commande introuvable.' });
     }
 
-    // Vérifier que l'utilisateur est soit le client, soit le vendeur
-    if (order.consumerId !== userId && order.sellerId !== userId) {
+    // Vérifier que l'utilisateur est soit le client, soit le vendeur, soit le livreur
+    if (order.consumerId !== userId && order.sellerId !== userId && order.delivererId !== userId) {
       return res.status(403).json({ message: 'Accès non autorisé.' });
     }
 
