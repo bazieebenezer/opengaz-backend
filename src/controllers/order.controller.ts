@@ -177,7 +177,8 @@ export const getConsumerOrders = async (req: any, res: Response) => {
           select: {
             id: true,
             name: true,
-            phone: true
+            phone: true,
+            shopImage: true
           }
         },
         items: {
@@ -368,7 +369,8 @@ export const getOrderDetails = async (req: any, res: Response) => {
           select: {
             id: true,
             name: true,
-            phone: true
+            phone: true,
+            shopImage: true
           }
         },
         items: {
