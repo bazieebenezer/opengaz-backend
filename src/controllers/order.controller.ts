@@ -392,7 +392,7 @@ export const getAvailableOrders = async (req: any, res: Response) => {
     const orders = await prisma.order.findMany({
       where: { 
         status: { in: ['PREPARING', 'SHIPPED'] },
-        deliveryId: null
+        delivererId: null
       },
       include: {
         consumer: { select: { name: true, address: true } },
@@ -421,11 +421,11 @@ export const assignOrderToDelivery = async (req: any, res: Response) => {
     const order = await prisma.order.findUnique({ where: { id } });
 
     if (!order) return res.status(404).json({ message: 'Commande introuvable.' });
-    if (order.deliveryId) return res.status(400).json({ message: 'Commande déjà assignée.' });
+    if (order.delivererId) return res.status(400).json({ message: 'Commande déjà assignée.' });
 
     const updatedOrder = await prisma.order.update({
       where: { id },
-      data: { deliveryId, status: 'SHIPPED' }
+      data: { delivererId: deliveryId, status: 'SHIPPED' }
     });
 
     res.status(200).json({ message: 'Commande assignée avec succès.', order: updatedOrder });
@@ -444,7 +444,7 @@ export const getDeliveryOrders = async (req: any, res: Response) => {
 
     const orders = await prisma.order.findMany({
       where: { 
-        deliveryId
+        delivererId: deliveryId
       },
       include: {
         consumer: { select: { name: true, phone: true, address: true } },
