@@ -173,6 +173,13 @@ export const getConsumerOrders = async (req: any, res: Response) => {
             shopImage: true,
           }
         },
+        deliverer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true
+          }
+        },
         items: {
           include: {
             product: {
