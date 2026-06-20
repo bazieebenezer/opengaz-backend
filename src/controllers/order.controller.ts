@@ -291,6 +291,7 @@ export const createOrder = async (req: any, res: Response) => {
           consumerId,
           sellerId,
           totalAmount,
+          status: 'PENDING_DELIVERY',
           items: {
             create: orderItemsData
           }
@@ -391,7 +392,7 @@ export const getAvailableOrders = async (req: any, res: Response) => {
   try {
     const orders = await prisma.order.findMany({
       where: { 
-        status: { in: ['PREPARING', 'SHIPPED'] },
+        status: 'PENDING_DELIVERY',
         delivererId: null
       },
       include: {

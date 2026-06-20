@@ -118,6 +118,7 @@ model GasCategory {
 
 enum OrderStatus {
   PENDING
+  PENDING_DELIVERY
   PREPARING
   SHIPPED
   DELIVERED
