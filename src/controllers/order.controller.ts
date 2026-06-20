@@ -387,23 +387,11 @@ export const getOrderDetails = async (req: any, res: Response) => {
 };
 
 /**
- * Récupère les commandes disponibles pour livraison (filtrées par proximité)
+ * Récupère toutes les commandes disponibles pour livraison (pour tous les livreurs)
  */
 export const getAvailableOrders = async (req: any, res: Response) => {
   try {
-    const delivererId = req.user.id;
-    
-    // 1. Get deliverer's registered location
-    const deliverer = await prisma.user.findUnique({
-      where: { id: delivererId },
-      select: { latitude: true, longitude: true }
-    });
-
-    if (!deliverer || deliverer.latitude === null || deliverer.longitude === null) {
-      return res.status(400).json({ message: 'Localisation du livreur non configurée.' });
-    }
-
-    // 2. Fetch relevant orders
+    // Fetch all pending orders without proximity filtering
     const orders = await prisma.order.findMany({
       where: { 
         status: 'PENDING_DELIVERY',
@@ -420,25 +408,11 @@ export const getAvailableOrders = async (req: any, res: Response) => {
           } 
         },
         items: { include: { product: { include: { category: true } } } }
-      }
+      },
+      orderBy: { createdAt: 'asc' }
     });
 
-    // 3. Filter/Sort by distance (within 10km)
-    const MAX_DISTANCE_KM = 10;
-    const sortedOrders = orders
-      .map(order => ({
-        ...order,
-        distance: calculateDistance(
-          deliverer.latitude!,
-          deliverer.longitude!,
-          order.seller.latitude || 0,
-          order.seller.longitude || 0
-        )
-      }))
-      .filter(order => order.distance <= MAX_DISTANCE_KM)
-      .sort((a, b) => a.distance - b.distance);
-
-    res.status(200).json({ orders: sortedOrders });
+    res.status(200).json({ orders });
   } catch (error: any) {
     console.error('Erreur GetAvailableOrders:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération des commandes disponibles.', error: error.message });
