@@ -6,7 +6,10 @@ import {
   createOrder,
   getConsumerOrders,
   clearConsumerHistory,
-  clearSellerHistory 
+  clearSellerHistory,
+  getAvailableOrders,
+  assignOrderToDelivery,
+  getDeliveryOrders
 } from '../controllers/order.controller';
 import { protect } from '../middlewares/auth.middleware';
 
@@ -57,11 +60,34 @@ router.delete('/seller/history', clearSellerHistory);
  */
 router.get('/:id', getOrderDetails);
 
+
 /**
  * @route   PATCH /api/orders/:id/status
  * @desc    Mettre à jour le statut d'une commande
  * @access  Private (Seller)
  */
 router.patch('/:id/status', updateOrderStatus);
+
+/**
+ * @route   GET /api/orders/delivery/available
+ * @desc    Récupérer les commandes disponibles pour livraison
+ * @access  Private (Delivery)
+ */
+router.get('/delivery/available', getAvailableOrders);
+
+
+/**
+ * @route   POST /api/orders/:id/assign
+ * @desc    Assigner une commande au livreur connecté
+ * @access  Private (Delivery)
+ */
+router.post('/:id/assign', assignOrderToDelivery);
+
+/**
+ * @route   GET /api/orders/delivery/my-orders
+ * @desc    Récupérer les commandes du livreur connecté
+ * @access  Private (Delivery)
+ */
+router.get('/delivery/my-orders', getDeliveryOrders);
 
 export default router;

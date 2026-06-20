@@ -334,6 +334,7 @@ export const createOrder = async (req: any, res: Response) => {
   }
 };
 
+
 /**
  * Récupère les détails d'une commande spécifique
  */
@@ -380,5 +381,82 @@ export const getOrderDetails = async (req: any, res: Response) => {
   } catch (error: any) {
     console.error('Erreur GetOrderDetails:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération des détails.', error: error.message });
+  }
+};
+
+/**
+ * Récupère les commandes disponibles pour livraison
+ */
+export const getAvailableOrders = async (req: any, res: Response) => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: { 
+        status: { in: ['PREPARING', 'SHIPPED'] },
+        deliveryId: null
+      },
+      include: {
+        consumer: { select: { name: true, address: true } },
+        seller: { select: { shopName: true, address: true } },
+        items: { include: { product: { include: { category: true } } } }
+      },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    res.status(200).json({ orders });
+  } catch (error: any) {
+    console.error('Erreur GetAvailableOrders:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération des commandes disponibles.', error: error.message });
+  }
+};
+
+
+/**
+ * Assigne une commande au livreur connecté
+ */
+export const assignOrderToDelivery = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const deliveryId = req.user.id;
+
+    const order = await prisma.order.findUnique({ where: { id } });
+
+    if (!order) return res.status(404).json({ message: 'Commande introuvable.' });
+    if (order.deliveryId) return res.status(400).json({ message: 'Commande déjà assignée.' });
+
+    const updatedOrder = await prisma.order.update({
+      where: { id },
+      data: { deliveryId, status: 'SHIPPED' }
+    });
+
+    res.status(200).json({ message: 'Commande assignée avec succès.', order: updatedOrder });
+  } catch (error: any) {
+    console.error('Erreur AssignOrderToDelivery:', error);
+    res.status(500).json({ message: 'Erreur lors de l\'assignation.', error: error.message });
+  }
+};
+
+/**
+ * Récupère les commandes assignées au livreur connecté
+ */
+export const getDeliveryOrders = async (req: any, res: Response) => {
+  try {
+    const deliveryId = req.user.id;
+
+    const orders = await prisma.order.findMany({
+      where: { 
+        deliveryId
+      },
+      include: {
+        consumer: { select: { name: true, phone: true, address: true } },
+        seller: { select: { shopName: true, address: true } },
+        items: { include: { product: { include: { category: true } } } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json({ orders });
+  } catch (error: any) {
+    console.error('Erreur GetDeliveryOrders:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération de vos commandes.', error: error.message });
   }
 };
