@@ -54,27 +54,18 @@ router.get('/seller', getSellerOrders);
 router.delete('/seller/history', clearSellerHistory);
 
 /**
- * @route   GET /api/orders/:id
- * @desc    Récupérer les détails d'une commande spécifique
- * @access  Private (Consumer/Seller)
- */
-router.get('/:id', getOrderDetails);
-
-
-/**
- * @route   PATCH /api/orders/:id/status
- * @desc    Mettre à jour le statut d'une commande
- * @access  Private (Seller)
- */
-router.patch('/:id/status', updateOrderStatus);
-
-/**
  * @route   GET /api/orders/delivery/available
  * @desc    Récupérer les commandes disponibles pour livraison
  * @access  Private (Delivery)
  */
 router.get('/delivery/available', getAvailableOrders);
 
+/**
+ * @route   GET /api/orders/delivery/my-orders
+ * @desc    Récupérer les commandes du livreur connecté
+ * @access  Private (Delivery)
+ */
+router.get('/delivery/my-orders', getDeliveryOrders);
 
 /**
  * @route   POST /api/orders/:id/assign
@@ -84,10 +75,17 @@ router.get('/delivery/available', getAvailableOrders);
 router.post('/:id/assign', assignOrderToDelivery);
 
 /**
- * @route   GET /api/orders/delivery/my-orders
- * @desc    Récupérer les commandes du livreur connecté
- * @access  Private (Delivery)
+ * @route   GET /api/orders/:id
+ * @desc    Récupérer les détails d'une commande spécifique
+ * @access  Private (Consumer/Seller)
  */
-router.get('/delivery/my-orders', getDeliveryOrders);
+router.get('/:id', getOrderDetails);
+
+/**
+ * @route   PATCH /api/orders/:id/status
+ * @desc    Mettre à jour le statut d'une commande
+ * @access  Private (Seller)
+ */
+router.patch('/:id/status', updateOrderStatus);
 
 export default router;

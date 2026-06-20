@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import { OrderStatus } from '@prisma/client';
+import { calculateDistance } from '../utils/geo';
 
 /**
  * Récupère les commandes reçues par le vendeur connecté
@@ -100,7 +101,7 @@ export const updateOrderStatus = async (req: any, res: Response) => {
       return res.status(400).json({ message: 'Impossible de modifier une commande terminée ou annulée.' });
     }
 
-    const statusOrder = ['PENDING', 'PREPARING', 'SHIPPED', 'DELIVERED', 'COMPLETED'];
+    const statusOrder = ['PENDING', 'PENDING_DELIVERY', 'PREPARING', 'SHIPPED', 'DELIVERED', 'COMPLETED'];
     const currentIndex = statusOrder.indexOf(order.status);
     const newIndex = statusOrder.indexOf(status);
 
@@ -386,10 +387,23 @@ export const getOrderDetails = async (req: any, res: Response) => {
 };
 
 /**
- * Récupère les commandes disponibles pour livraison
+ * Récupère les commandes disponibles pour livraison (filtrées par proximité)
  */
 export const getAvailableOrders = async (req: any, res: Response) => {
   try {
+    const delivererId = req.user.id;
+    
+    // 1. Get deliverer's registered location
+    const deliverer = await prisma.user.findUnique({
+      where: { id: delivererId },
+      select: { latitude: true, longitude: true }
+    });
+
+    if (!deliverer || deliverer.latitude === null || deliverer.longitude === null) {
+      return res.status(400).json({ message: 'Localisation du livreur non configurée.' });
+    }
+
+    // 2. Fetch relevant orders
     const orders = await prisma.order.findMany({
       where: { 
         status: 'PENDING_DELIVERY',
@@ -397,13 +411,34 @@ export const getAvailableOrders = async (req: any, res: Response) => {
       },
       include: {
         consumer: { select: { name: true, address: true } },
-        seller: { select: { shopName: true, address: true } },
+        seller: { 
+          select: { 
+            shopName: true, 
+            address: true, 
+            latitude: true, 
+            longitude: true 
+          } 
+        },
         items: { include: { product: { include: { category: true } } } }
-      },
-      orderBy: { createdAt: 'asc' }
+      }
     });
 
-    res.status(200).json({ orders });
+    // 3. Filter/Sort by distance (within 10km)
+    const MAX_DISTANCE_KM = 10;
+    const sortedOrders = orders
+      .map(order => ({
+        ...order,
+        distance: calculateDistance(
+          deliverer.latitude!,
+          deliverer.longitude!,
+          order.seller.latitude || 0,
+          order.seller.longitude || 0
+        )
+      }))
+      .filter(order => order.distance <= MAX_DISTANCE_KM)
+      .sort((a, b) => a.distance - b.distance);
+
+    res.status(200).json({ orders: sortedOrders });
   } catch (error: any) {
     console.error('Erreur GetAvailableOrders:', error);
     res.status(500).json({ message: 'Erreur lors de la récupération des commandes disponibles.', error: error.message });
@@ -412,22 +447,31 @@ export const getAvailableOrders = async (req: any, res: Response) => {
 
 
 /**
- * Assigne une commande au livreur connecté
+ * Assigne une commande au livreur connecté (Mécanisme First-to-Accept)
  */
 export const assignOrderToDelivery = async (req: any, res: Response) => {
   try {
     const { id } = req.params;
     const deliveryId = req.user.id;
 
-    const order = await prisma.order.findUnique({ where: { id } });
-
-    if (!order) return res.status(404).json({ message: 'Commande introuvable.' });
-    if (order.delivererId) return res.status(400).json({ message: 'Commande déjà assignée.' });
-
-    const updatedOrder = await prisma.order.update({
-      where: { id },
-      data: { delivererId: deliveryId, status: 'SHIPPED' }
+    // Atomic update: only update if delivererId is currently null
+    const result = await prisma.order.updateMany({
+      where: { 
+        id,
+        delivererId: null, // Critical check for concurrency
+        status: 'PENDING_DELIVERY'
+      },
+      data: { 
+        delivererId: deliveryId, 
+        status: 'SHIPPED' 
+      }
     });
+
+    if (result.count === 0) {
+      return res.status(400).json({ message: 'Commande déjà prise par un autre livreur ou indisponible.' });
+    }
+
+    const updatedOrder = await prisma.order.findUnique({ where: { id } });
 
     res.status(200).json({ message: 'Commande assignée avec succès.', order: updatedOrder });
   } catch (error: any) {
