@@ -115,7 +115,17 @@ export const updateOrderStatus = async (req: any, res: Response) => {
         where: { id },
         data: { status: status as OrderStatus },
         include: {
-          consumer: true,
+          consumer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+            latitude: true,
+            longitude: true
+          }
+        },
           items: {
             include: {
               product: {
@@ -359,7 +369,17 @@ export const getOrderDetails = async (req: any, res: Response) => {
     const order = await prisma.order.findUnique({
       where: { id },
       include: {
-        consumer: true,
+        consumer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+            latitude: true,
+            longitude: true
+          }
+        },
         seller: {
           select: {
             id: true,
