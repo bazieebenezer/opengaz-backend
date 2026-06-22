@@ -101,7 +101,7 @@ export const updateOrderStatus = async (req: any, res: Response) => {
       return res.status(400).json({ message: 'Impossible de modifier une commande terminée ou annulée.' });
     }
 
-    const statusOrder = ['PENDING', 'PENDING_DELIVERY', 'PREPARING', 'SHIPPED', 'DELIVERED', 'COMPLETED'];
+    const statusOrder = ['PENDING', 'PREPARING', 'PENDING_DELIVERY', 'SHIPPED', 'DELIVERED', 'COMPLETED'];
     const currentIndex = statusOrder.indexOf(order.status);
     const newIndex = statusOrder.indexOf(status);
 
