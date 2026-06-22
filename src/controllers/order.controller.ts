@@ -317,7 +317,10 @@ export const createOrder = async (req: any, res: Response) => {
           },
           seller: {
             select: {
-              shopName: true
+              id: true,
+              shopName: true,
+              phone: true,
+              address: true
             }
           }
         }
