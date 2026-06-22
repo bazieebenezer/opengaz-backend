@@ -101,7 +101,7 @@ export const updateOrderStatus = async (req: any, res: Response) => {
       return res.status(400).json({ message: 'Impossible de modifier une commande terminée ou annulée.' });
     }
 
-    const statusOrder = ['PENDING', 'PREPARING', 'PENDING_DELIVERY', 'SHIPPED', 'DELIVERED', 'COMPLETED'];
+    const statusOrder = ['PENDING', 'PREPARING', 'READY_FOR_DELIVERY', 'IN_DELIVERY', 'DELIVERED', 'COMPLETED'];
     const currentIndex = statusOrder.indexOf(order.status);
     const newIndex = statusOrder.indexOf(status);
 
@@ -407,10 +407,10 @@ export const getOrderDetails = async (req: any, res: Response) => {
  */
 export const getAvailableOrders = async (req: any, res: Response) => {
   try {
-    // Fetch all pending orders without proximity filtering, only those validated by seller (PENDING_DELIVERY)
+    // Fetch all pending orders without proximity filtering, only those validated by seller (READY_FOR_DELIVERY)
     const orders = await prisma.order.findMany({
       where: { 
-        status: 'PENDING_DELIVERY',
+        status: 'READY_FOR_DELIVERY',
         delivererId: null
       },
       include: {
@@ -449,11 +449,11 @@ export const assignOrderToDelivery = async (req: any, res: Response) => {
       where: { 
         id,
         delivererId: null, // Critical check for concurrency
-        status: 'PENDING_DELIVERY'
+        status: 'READY_FOR_DELIVERY'
       },
       data: { 
         delivererId: deliveryId, 
-        status: 'SHIPPED' 
+        status: 'IN_DELIVERY' 
       }
     });
 
@@ -471,27 +471,97 @@ export const assignOrderToDelivery = async (req: any, res: Response) => {
 };
 
 /**
- * Récupère les commandes assignées au livreur connecté
+ * Valide une commande (Vendeur) -> PENDING -> PREPARING
  */
-export const getDeliveryOrders = async (req: any, res: Response) => {
+export const validateOrder = async (req: any, res: Response) => {
   try {
-    const deliveryId = req.user.id;
+    const { id } = req.params;
+    const sellerId = req.user.id;
 
-    const orders = await prisma.order.findMany({
-      where: { 
-        delivererId: deliveryId
-      },
-      include: {
-        consumer: { select: { name: true, phone: true, address: true } },
-        seller: { select: { shopName: true, address: true } },
-        items: { include: { product: { include: { category: true } } } }
-      },
-      orderBy: { createdAt: 'desc' }
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order || order.sellerId !== sellerId || order.status !== 'PENDING') {
+      return res.status(400).json({ message: 'Commande invalide ou action non autorisée.' });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id },
+      data: { status: 'PREPARING' }
     });
 
-    res.status(200).json({ orders });
+    res.status(200).json({ message: 'Commande validée et en préparation.', order: updatedOrder });
   } catch (error: any) {
-    console.error('Erreur GetDeliveryOrders:', error);
-    res.status(500).json({ message: 'Erreur lors de la récupération de vos commandes.', error: error.message });
+    res.status(500).json({ message: 'Erreur lors de la validation.', error: error.message });
+  }
+};
+
+/**
+ * Marque une commande comme prête (Vendeur) -> PREPARING -> READY_FOR_DELIVERY
+ */
+export const markAsReady = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const sellerId = req.user.id;
+
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order || order.sellerId !== sellerId || order.status !== 'PREPARING') {
+      return res.status(400).json({ message: 'Commande invalide ou action non autorisée.' });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id },
+      data: { status: 'READY_FOR_DELIVERY' }
+    });
+
+    res.status(200).json({ message: 'Commande marquée comme prête.', order: updatedOrder });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erreur lors de la mise à jour.', error: error.message });
+  }
+};
+
+/**
+ * Confirme la livraison (Livreur) -> IN_DELIVERY -> DELIVERED
+ */
+export const confirmDelivered = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const delivererId = req.user.id;
+
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order || order.delivererId !== delivererId || order.status !== 'IN_DELIVERY') {
+      return res.status(400).json({ message: 'Commande invalide ou action non autorisée.' });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id },
+      data: { status: 'DELIVERED' }
+    });
+
+    res.status(200).json({ message: 'Commande livrée confirmée.', order: updatedOrder });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erreur lors de la confirmation.', error: error.message });
+  }
+};
+
+/**
+ * Confirme la complétion (Vendeur) -> DELIVERED -> COMPLETED
+ */
+export const confirmCompleted = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const sellerId = req.user.id;
+
+    const order = await prisma.order.findUnique({ where: { id } });
+    if (!order || order.sellerId !== sellerId || order.status !== 'DELIVERED') {
+      return res.status(400).json({ message: 'Commande invalide ou action non autorisée.' });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id },
+      data: { status: 'COMPLETED' }
+    });
+
+    res.status(200).json({ message: 'Commande terminée.', order: updatedOrder });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Erreur lors de la complétion.', error: error.message });
   }
 };

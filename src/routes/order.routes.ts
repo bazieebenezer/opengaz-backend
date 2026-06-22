@@ -9,7 +9,11 @@ import {
   clearSellerHistory,
   getAvailableOrders,
   assignOrderToDelivery,
-  getDeliveryOrders
+  getDeliveryOrders,
+  validateOrder,
+  markAsReady,
+  confirmDelivered,
+  confirmCompleted
 } from '../controllers/order.controller';
 import { protect } from '../middlewares/auth.middleware';
 
@@ -87,5 +91,33 @@ router.get('/:id', getOrderDetails);
  * @access  Private (Seller)
  */
 router.patch('/:id/status', updateOrderStatus);
+
+/**
+ * @route   POST /api/orders/:id/validate
+ * @desc    Valider une commande (Vendeur)
+ * @access  Private (Seller)
+ */
+router.post('/:id/validate', validateOrder);
+
+/**
+ * @route   POST /api/orders/:id/ready
+ * @desc    Marquer une commande comme prête (Vendeur)
+ * @access  Private (Seller)
+ */
+router.post('/:id/ready', markAsReady);
+
+/**
+ * @route   POST /api/orders/:id/delivered
+ * @desc    Confirmer la livraison (Livreur)
+ * @access  Private (Delivery)
+ */
+router.post('/:id/delivered', confirmDelivered);
+
+/**
+ * @route   POST /api/orders/:id/completed
+ * @desc    Confirmer la complétion (Vendeur)
+ * @access  Private (Seller)
+ */
+router.post('/:id/completed', confirmCompleted);
 
 export default router;
