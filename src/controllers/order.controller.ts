@@ -565,3 +565,30 @@ export const confirmCompleted = async (req: any, res: Response) => {
     res.status(500).json({ message: 'Erreur lors de la complétion.', error: error.message });
   }
 };
+
+/**
+ * Récupère les commandes assignées au livreur connecté
+ */
+export const getDeliveryOrders = async (req: any, res: Response) => {
+  try {
+    const deliveryId = req.user.id;
+
+    const orders = await prisma.order.findMany({
+      where: { 
+        delivererId: deliveryId
+      },
+      include: {
+        consumer: { select: { name: true, phone: true, address: true } },
+        seller: { select: { shopName: true, address: true } },
+        items: { include: { product: { include: { category: true } } } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.status(200).json({ orders });
+  } catch (error: any) {
+    console.error('Erreur GetDeliveryOrders:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération de vos commandes.', error: error.message });
+  }
+};
+
