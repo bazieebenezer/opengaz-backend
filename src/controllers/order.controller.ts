@@ -399,6 +399,7 @@ export const getOrderDetails = async (req: any, res: Response) => {
             longitude: true
           }
         },
+        items: {
           include: {
             product: {
               include: {
