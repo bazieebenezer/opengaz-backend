@@ -174,6 +174,17 @@ export const getConsumerOrders = async (req: any, res: Response) => {
         consumerHidden: false
       },
       include: {
+        consumer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+            latitude: true,
+            longitude: true,
+          }
+        },
         seller: {
           select: {
             id: true,
@@ -188,7 +199,9 @@ export const getConsumerOrders = async (req: any, res: Response) => {
             id: true,
             name: true,
             phone: true,
-            shopImage: true
+            shopImage: true,
+            latitude: true,
+            longitude: true
           }
         },
         items: {
@@ -242,6 +255,7 @@ export const createOrder = async (req: any, res: Response) => {
     const { sellerId, items } = req.body; // items: [{ productId, quantity }]
 
     console.log('[DEBUG] createOrder payload:', { sellerId, itemsCount: items?.length, consumerId });
+    console.log('[DEBUG] items:', JSON.stringify(items, null, 2));
 
     if (!sellerId || !items || !Array.isArray(items) || items.length === 0) {
       console.log('[DEBUG] Invalid payload check failed');
