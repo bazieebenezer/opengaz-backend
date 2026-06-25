@@ -377,7 +377,7 @@ export const getOrderDetails = async (req: any, res: Response) => {
             phone: true,
             address: true,
             latitude: true,
-            longitude: true
+            longitude: true,
           }
         },
         seller: {
@@ -385,7 +385,8 @@ export const getOrderDetails = async (req: any, res: Response) => {
             id: true,
             shopName: true,
             phone: true,
-            address: true
+            address: true,
+            shopImage: true,
           }
         },
         deliverer: {
@@ -393,10 +394,11 @@ export const getOrderDetails = async (req: any, res: Response) => {
             id: true,
             name: true,
             phone: true,
-            shopImage: true
+            shopImage: true,
+            latitude: true,
+            longitude: true
           }
         },
-        items: {
           include: {
             product: {
               include: {
