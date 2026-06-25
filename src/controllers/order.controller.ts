@@ -344,7 +344,29 @@ export const createOrder = async (req: any, res: Response) => {
               id: true,
               shopName: true,
               phone: true,
-              address: true
+              address: true,
+              shopImage: true
+            }
+          },
+          consumer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              address: true,
+              latitude: true,
+              longitude: true
+            }
+          },
+          deliverer: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              shopImage: true,
+              latitude: true,
+              longitude: true
             }
           }
         }

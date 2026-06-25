@@ -60,9 +60,39 @@ const gasCategories = [
   }
 ];
 
+async function seedAdmins() {
+  console.log('Starting seeding administrators...');
+  const password = 'Spck0211';
+  const hashedPassword = await hashPassword(password);
+
+  const admins = [
+    { email: 'admin1@opengaz.bf', name: 'Admin 1', phone: '70000001', role: 'ADMIN' as const },
+    { email: 'admin2@opengaz.bf', name: 'Admin 2', phone: '70000002', role: 'ADMIN' as const },
+    { email: 'admin3@opengaz.bf', name: 'Admin 3', phone: '70000003', role: 'ADMIN' as const },
+    { email: 'admin4@opengaz.bf', name: 'Admin 4', phone: '70000004', role: 'ADMIN' as const },
+    { email: 'admin5@opengaz.bf', name: 'Admin 5', phone: '70000005', role: 'ADMIN' as const },
+  ];
+
+  for (const admin of admins) {
+    await prisma.user.upsert({
+      where: { email: admin.email },
+      update: { password: hashedPassword, role: 'ADMIN' },
+      create: { ...admin, password: hashedPassword },
+    });
+    console.log(`Administrator seeded: ${admin.email}`);
+  }
+}
+
 async function main() {
+  await seedGasCategories();
+  await seedSellers();
+  await seedAdmins();
+  console.log('Seeding finished successfully!');
+}
+
+
+async function seedGasCategories() {
   console.log('Starting seeding gas categories...');
-  
   for (const category of gasCategories) {
     await (prisma as any).gasCategory.upsert({
       where: { id: category.id },
@@ -70,7 +100,9 @@ async function main() {
       create: category,
     });
   }
-  
+}
+
+async function seedSellers() {
   console.log('Starting seeding test sellers in Abidjan...');
   const hashedPassword = await hashPassword('password123');
 
@@ -131,7 +163,7 @@ async function main() {
     for (const categoryId of selectedGases) {
       await (prisma as any).product.upsert({
         where: {
-          id: `${user.id}-${categoryId}` // Mock ID for upsert
+          id: `${user.id}-${categoryId}` 
         },
         update: {
           stock: 10
@@ -145,9 +177,8 @@ async function main() {
       });
     }
   }
-  
-  console.log('Seeding finished successfully!');
 }
+
 
 main()
   .catch((e) => {
